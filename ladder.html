@@ -14,7 +14,7 @@
 
 <main>
   <div class="section-title">Ladder</div>
-  <p class="section-sub">Updated after each week's score sheets are entered. 1 pt per set, 0.5 for a drawn set, plus bonus points for most sets and most games. Ties are broken by head-to-head points between the tied teams, then overall set and game differential (shown below each score).</p>
+  <p class="section-sub">Updated after each week's score sheets are entered. 1 pt per set, 0.5 for a drawn set, plus bonus points for most sets and most games. Ties are broken by overall set differential, then overall game differential if needed (shown below each score).</p>
   <div class="table-wrap">
     <table>
       <thead>
@@ -53,25 +53,19 @@
       while(j+1 < rows.length && rows[j+1].points === rows[i].points) j++;
       const clusterSize = j - i + 1;
       if(clusterSize === 2){
-        const h2h = headToHeadPoints(rows[i].team, rows[j].team);
-        if(h2h.ptsA !== h2h.ptsB){
-          notes[i] = `<span class="tie-note stat-win">Beat Team ${rows[j].team} H2H ${h2h.ptsA}–${h2h.ptsB}</span>`;
-          notes[j] = `<span class="tie-note stat-loss">Lost to Team ${rows[i].team} H2H ${h2h.ptsB}–${h2h.ptsA}</span>`;
+        const setDiffI = rows[i].setsFor - rows[i].setsAgainst;
+        const setDiffJ = rows[j].setsFor - rows[j].setsAgainst;
+        if(setDiffI !== setDiffJ){
+          notes[i] = `<span class="tie-note stat-win">Ahead on set diff</span>`;
+          notes[j] = `<span class="tie-note stat-loss">Behind on set diff</span>`;
         } else {
-          const setDiffI = rows[i].setsFor - rows[i].setsAgainst;
-          const setDiffJ = rows[j].setsFor - rows[j].setsAgainst;
-          if(setDiffI !== setDiffJ){
-            notes[i] = `<span class="tie-note stat-win">Ahead on set diff</span>`;
-            notes[j] = `<span class="tie-note stat-loss">Behind on set diff</span>`;
+          const gameDiffI = rows[i].gamesFor - rows[i].gamesAgainst;
+          const gameDiffJ = rows[j].gamesFor - rows[j].gamesAgainst;
+          if(gameDiffI !== gameDiffJ){
+            notes[i] = `<span class="tie-note stat-win">Ahead on game diff</span>`;
+            notes[j] = `<span class="tie-note stat-loss">Behind on game diff</span>`;
           } else {
-            const gameDiffI = rows[i].gamesFor - rows[i].gamesAgainst;
-            const gameDiffJ = rows[j].gamesFor - rows[j].gamesAgainst;
-            if(gameDiffI !== gameDiffJ){
-              notes[i] = `<span class="tie-note stat-win">Ahead on game diff</span>`;
-              notes[j] = `<span class="tie-note stat-loss">Behind on game diff</span>`;
-            } else {
-              notes[i] = notes[j] = `<span class="tie-note">Fully tied — needs review</span>`;
-            }
+            notes[i] = notes[j] = `<span class="tie-note">Fully tied — needs review</span>`;
           }
         }
       } else if(clusterSize >= 3){

@@ -63,33 +63,9 @@ function matchPoints(r){
   };
 }
 
-// ---------- Head-to-head ----------
-// Total ladder points each team earned in the (up to two) matches played
-// directly against each other. Used to break ties on the ladder.
-function headToHeadPoints(teamA, teamB){
-  teamA = Number(teamA); teamB = Number(teamB);
-  let ptsA = 0, ptsB = 0;
-  ALL_ROUNDS.forEach((pairs, idx) => {
-    const roundNum = idx+1;
-    pairs.forEach((m, courtIdx) => {
-      const [x, y] = m;
-      const isMatch = (x===teamA && y===teamB) || (x===teamB && y===teamA);
-      if(!isMatch) return;
-      const r = RESULTS[`${roundNum}-${courtIdx}`];
-      if(!r) return;
-      const bp = matchPoints(r);
-      if(x===teamA){ ptsA += bp.totalA; ptsB += bp.totalB; }
-      else { ptsA += bp.totalB; ptsB += bp.totalA; }
-    });
-  });
-  return { ptsA, ptsB };
-}
-
 // ---------- Ladder ----------
-// Ranking: total points descending, then head-to-head points between the
-// tied teams (per the club's convention — easy to spot-check against the
-// 1-2 relevant paper sheets), then overall set/game differential as a
-// fallback for anything head-to-head can't resolve (e.g. a 3+-way tie).
+// Ranking: total points descending, then overall set differential
+// (across the whole competition), then overall game differential.
 function computeLadder(){
   const teams = {};
   for(let t=1;t<=8;t++){ teams[t] = { played:0, setsFor:0, setsAgainst:0, gamesFor:0, gamesAgainst:0, points:0 }; }
@@ -114,13 +90,9 @@ function computeLadder(){
 
   return Object.entries(teams)
     .map(([t,v]) => ({ team:t, ...v }))
-    .sort((x,y) => {
-      if(y.points !== x.points) return y.points - x.points;
-      const h2h = headToHeadPoints(x.team, y.team);
-      if(h2h.ptsA !== h2h.ptsB) return h2h.ptsB - h2h.ptsA;
-      return (y.setsFor-y.setsAgainst)-(x.setsFor-x.setsAgainst)
-        || (y.gamesFor-y.gamesAgainst)-(x.gamesFor-x.gamesAgainst);
-    });
+    .sort((x,y) => y.points - x.points
+      || (y.setsFor-y.setsAgainst)-(x.setsFor-x.setsAgainst)
+      || (y.gamesFor-y.gamesAgainst)-(x.gamesFor-x.gamesAgainst));
 }
 
 // ---------- Next match night (first round with no results entered yet) ----------
