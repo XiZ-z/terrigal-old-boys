@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fixtures — Terrigal Old Boys</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="fixtures">
+
+<div id="nav-placeholder"></div>
+
+<main>
+  <div class="section-title">Fixtures</div>
+  <p class="section-sub">Full draw across 4 courts. Results fill in as each round is scanned in.</p>
+  <div id="fixtures-list"></div>
+</main>
+
+<div id="footer-placeholder"></div>
+
+<script src="data.js"></script>
+<script>
+  function renderFixtures(){
+    const el = document.getElementById('fixtures-list');
+    let html = '';
+    ALL_ROUNDS.forEach((pairs, idx) => {
+      const roundNum = idx+1;
+      html += `<div class="round-block"><div class="round-head"><span class="round-num">RD ${roundNum}</span><span class="round-date">${DATES[idx]}</span></div>`;
+      html += `<div class="table-wrap"><table><thead><tr><th style="width:64px;">Crt</th><th>Match</th><th>Sets</th><th>Games</th><th>Points</th></tr></thead><tbody>`;
+      pairs.forEach((m, courtIdx) => {
+        const key = `${roundNum}-${courtIdx}`;
+        const r = RESULTS[key];
+        if(!r){
+          html += `<tr><td class="mono-cell">CRT ${courtIdx+1}</td><td>Team ${m[0]} v Team ${m[1]}</td><td colspan="3"><span class="pill">Upcoming</span></td></tr>`;
+          return;
+        }
+        const bp = matchPoints(r);
+        const setsBonusTxt = bp.setsBonusA === 1
+          ? `<span class="pill">sets tied · +1 each</span>`
+          : `<span class="pill done">+2 sets bonus → Team ${bp.setsBonusA ? m[0] : m[1]}</span>`;
+        const gamesBonusTxt = bp.gamesBonusA === 1
+          ? `<span class="pill">games tied · +1 each</span>`
+          : `<span class="pill done">+2 games bonus → Team ${bp.gamesBonusA ? m[0] : m[1]}</span>`;
+        html += `<tr>
+          <td class="mono-cell">CRT ${courtIdx+1}</td>
+          <td>Team ${m[0]} v Team ${m[1]}</td>
+          <td class="mono-cell">${r.setsA}–${r.setsB}<br>${setsBonusTxt}</td>
+          <td class="mono-cell">${r.gamesA}–${r.gamesB}<br>${gamesBonusTxt}</td>
+          <td class="mono-cell"><strong>${bp.totalA}–${bp.totalB}</strong></td>
+        </tr>`;
+      });
+      html += `</tbody></table></div></div>`;
+    });
+    RESERVE_DATES.forEach((date, i) => {
+      html += `<div class="round-block"><div class="round-head"><span class="round-num">RD ${15+i}</span><span class="round-date">${date}</span></div>
+        <div class="table-wrap"><table><tbody><tr><td style="padding:14px;"><span class="pill wet">Wet weather reserve</span> — only played if a round robin week is postponed</td></tr></tbody></table></div></div>`;
+    });
+    el.innerHTML = html;
+  }
+  renderFixtures();
+</script>
+<script src="nav.js"></script>
+</body>
+</html>

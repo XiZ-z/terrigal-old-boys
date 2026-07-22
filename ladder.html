@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ladder — Terrigal Old Boys</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="ladder">
+
+<div id="nav-placeholder"></div>
+
+<main>
+  <div class="section-title">Ladder</div>
+  <p class="section-sub">Updated after each week's score sheets are entered. 1 pt per set, 0.5 for a drawn set, plus bonus points for most sets and most games.</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Team</th><th class="num-col">Played</th><th class="num-col">Sets<span class="th-sub">won&ndash;lost</span></th><th class="num-col">Games<span class="th-sub">won&ndash;lost</span></th><th class="num-col">Pts</th></tr>
+      </thead>
+      <tbody id="ladder-body"></tbody>
+    </table>
+  </div>
+</main>
+
+<div id="footer-placeholder"></div>
+
+<script src="data.js"></script>
+<script>
+  function statCell(forVal, againstVal){
+    if(forVal > againstVal){
+      return `<span class="stat-win">${forVal}</span>–<span class="stat-loss">${againstVal}</span>`;
+    }
+    if(againstVal > forVal){
+      return `<span class="stat-loss">${forVal}</span>–<span class="stat-win">${againstVal}</span>`;
+    }
+    return `<span class="stat-even">${forVal}</span>–<span class="stat-even">${againstVal}</span>`;
+  }
+
+  function renderLadder(){
+    const rows = computeLadder();
+    const body = document.getElementById('ladder-body');
+    body.innerHTML = rows.map((r, i) => `
+      <tr>
+        <td class="rank-cell">${i+1}</td>
+        <td><strong>Team ${r.team}</strong></td>
+        <td class="mono-cell num-col">${r.played}</td>
+        <td class="mono-cell num-col">${statCell(r.setsFor, r.setsAgainst)}</td>
+        <td class="mono-cell num-col">${statCell(r.gamesFor, r.gamesAgainst)}</td>
+        <td class="mono-cell num-col">${r.points}</td>
+      </tr>
+    `).join('');
+  }
+  renderLadder();
+</script>
+<script src="nav.js"></script>
+</body>
+</html>

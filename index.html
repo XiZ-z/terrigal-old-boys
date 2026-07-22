@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terrigal Old Boys — Season 2, 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="home">
+
+<div id="nav-placeholder"></div>
+
+<main>
+  <div class="hero">
+    <div class="hero-copy">
+      <div class="eyebrow">Wednesday nights · 7:00pm</div>
+      <h1>DOUBLES ON THE&nbsp;LINE.</h1>
+      <p>Eight teams, four courts, one Wednesday-night ladder. A double round robin runs the full season, with a top-six finals series deciding the 2026 Season 2 champion.</p>
+      <div class="hero-stats">
+        <div><div class="num">8</div><div class="lbl">Teams</div></div>
+        <div><div class="num">4</div><div class="lbl">Courts</div></div>
+        <div><div class="num">14</div><div class="lbl">Rounds</div></div>
+        <div><div class="num">09 Dec</div><div class="lbl">Grand Final</div></div>
+      </div>
+    </div>
+    <div class="scorecard">
+      <h3 id="next-round-title">Round 1</h3>
+      <div class="date" id="next-round-date">Wednesday, 5 August 2026</div>
+      <div id="home-next-matches"></div>
+    </div>
+  </div>
+
+  <div class="section-title">Season at a glance</div>
+  <p class="section-sub">Round robin runs Aug 5 – Nov 4, with two reserve weeks for wet weather before finals begin.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Phase</th><th>Dates</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr><td>Round robin</td><td>5 Aug – 4 Nov</td><td>14 rounds, every team plays every other team twice</td></tr>
+        <tr><td>Wet weather reserve</td><td>11 &amp; 18 Nov</td><td>Only played if a round robin week is rained out</td></tr>
+        <tr><td>Elimination finals</td><td>25 Nov</td><td>1v6, 2v5, 3v4 — teams 7th &amp; 8th are dropped</td></tr>
+        <tr><td>Semi finals</td><td>2 Dec</td><td>Winners advance, best-placed loser gets a lifeline</td></tr>
+        <tr><td>Grand final</td><td>9 Dec</td><td>Winner takes the 2026 Season 2 title</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<div id="footer-placeholder"></div>
+
+<script src="data.js"></script>
+<script>
+  function renderHomeNext(){
+    const next = getNextRound();
+    if(!next){
+      document.getElementById('next-round-title').textContent = 'Round robin complete';
+      document.getElementById('next-round-date').textContent = 'See Finals for what\'s next';
+      document.getElementById('home-next-matches').innerHTML = '';
+      return;
+    }
+    document.getElementById('next-round-title').textContent = `Round ${next.roundNum}`;
+    document.getElementById('next-round-date').textContent = `Wednesday, ${next.date}`;
+    document.getElementById('home-next-matches').innerHTML = next.pairs.map((m,i)=>
+      `<div class="court-row"><span><span class="tag">CRT ${i+1}</span><span class="match">Team ${m[0]} v Team ${m[1]}</span></span></div>`
+    ).join('');
+  }
+  renderHomeNext();
+</script>
+<script src="nav.js"></script>
+</body>
+</html>
