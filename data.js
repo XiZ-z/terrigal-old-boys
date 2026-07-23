@@ -37,7 +37,7 @@ const RESULTS = {
   // Round 1 — Team 1 v Team 8, Team 2 v Team 7, Team 3 v Team 6, Team 4 v Team 5
   "1-0": { setsA: 4,   setsB: 2,   gamesA: 27, gamesB: 21 },
   "1-1": { setsA: 3.5, setsB: 2.5, gamesA: 25, gamesB: 23 },
-  "1-2": { setsA: 5,   setsB: 1,   gamesA: 30, gamesB: 18 },
+  "1-2": { setsA: 6,   setsB: 0,   gamesA: 24, gamesB: 24 },
   "1-3": { setsA: 2,   setsB: 4,   gamesA: 20, gamesB: 28 },
   // Round 2 — Team 1 v Team 7, Team 8 v Team 6, Team 2 v Team 5, Team 3 v Team 4
   "2-0": { setsA: 4.5, setsB: 1.5, gamesA: 28, gamesB: 20 },
