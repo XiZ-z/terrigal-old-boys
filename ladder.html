@@ -14,7 +14,7 @@
 
 <main>
   <div class="section-title">Ladder</div>
-  <p class="section-sub">Updated after each week's score sheets are entered. 1 pt per set, 0.5 for a drawn set, plus bonus points for most sets and most games. Ties are broken by overall set differential, then overall game differential if needed (shown along the bottom of each row).</p>
+  <p class="section-sub">Updated after each week's score sheets are entered. 1 pt per set, 0.5 for a drawn set, plus bonus points for most sets and most games. Ties are broken by overall set differential, then overall game differential if needed (shown below each score).</p>
   <div class="table-wrap">
     <table>
       <thead>
@@ -103,12 +103,8 @@
     return '';
   }
 
-  function rowDetail(rows, tieNotes, i){
-    const r = rows[i];
-    const parts = [
-      `Sets ${formatDiff(r.setsFor - r.setsAgainst)}`,
-      `Games ${formatDiff(r.gamesFor - r.gamesAgainst)}`,
-    ];
+  function rowCaption(rows, tieNotes, i){
+    const parts = [];
     if(tieNotes[i]) parts.push(tieNotes[i]);
     const cn = cutNote(rows, i);
     if(cn) parts.push(cn);
@@ -119,18 +115,23 @@
     const rows = computeLadder();
     const tieNotes = buildTieNotes(rows);
     const body = document.getElementById('ladder-body');
-    const rowHtml = rows.map((r, i) => `
+    const rowHtml = rows.map((r, i) => {
+      const caption = rowCaption(rows, tieNotes, i);
+      return `
       <tr>
-        <td class="rank-cell" data-label="#">${i+1}</td>
-        <td data-label="Team"><strong>Team ${r.team}</strong></td>
-        <td class="mono-cell num-col" data-label="Played">${r.played}</td>
-        <td class="mono-cell num-col" data-label="Record">${recordCell(r.form)}</td>
-        <td class="mono-cell num-col" data-label="Sets">${statCell(r.setsFor, r.setsAgainst)}</td>
-        <td class="mono-cell num-col" data-label="Games">${statCell(r.gamesFor, r.gamesAgainst)}</td>
-        <td class="mono-cell num-col" data-label="Pts">${r.points}</td>
+        <td class="rank-cell">${i+1}</td>
+        <td>
+          <strong>Team ${r.team}</strong>
+          ${caption ? `<div class="row-caption">${caption}</div>` : ''}
+        </td>
+        <td class="mono-cell num-col">${r.played}</td>
+        <td class="mono-cell num-col">${recordCell(r.form)}</td>
+        <td class="mono-cell num-col">${statCell(r.setsFor, r.setsAgainst)}<span class="diff-line">${formatDiff(r.setsFor - r.setsAgainst)}</span></td>
+        <td class="mono-cell num-col">${statCell(r.gamesFor, r.gamesAgainst)}<span class="diff-line">${formatDiff(r.gamesFor - r.gamesAgainst)}</span></td>
+        <td class="mono-cell num-col">${r.points}</td>
       </tr>
-      <tr class="row-detail"><td colspan="7">${rowDetail(rows, tieNotes, i)}</td></tr>
-    `);
+    `;
+    });
     if(rows.length > FINALS_CUTOFF){
       rowHtml.splice(FINALS_CUTOFF, 0, `<tr class="cut-marker-row"><td colspan="7">Top ${FINALS_CUTOFF} make the finals series</td></tr>`);
     }
