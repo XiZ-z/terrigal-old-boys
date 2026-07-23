@@ -24,6 +24,10 @@
         <div><div class="num">14</div><div class="lbl">Rounds</div></div>
         <div><div class="num">09 Dec</div><div class="lbl">Grand Final</div></div>
       </div>
+      <div class="progress-wrap">
+        <div class="progress-label"><span>Season progress</span><span id="progress-text">0 of 14 rounds played</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+      </div>
     </div>
     <div class="scorecard">
       <h3 id="next-round-title">Round 1</h3>
@@ -95,8 +99,17 @@
       return `<div class="form-row"><span class="form-rank">${i+1}</span><span class="form-team">Team ${r.team}</span><span class="form-dots">${dots}</span></div>`;
     }).join('');
   }
+  function renderSeasonProgress(){
+    const totalRounds = ALL_ROUNDS.length;
+    const next = getNextRound();
+    const roundsPlayed = next ? next.roundNum - 1 : totalRounds;
+    const pct = Math.round((roundsPlayed / totalRounds) * 100);
+    document.getElementById('progress-fill').style.width = `${pct}%`;
+    document.getElementById('progress-text').textContent = `${roundsPlayed} of ${totalRounds} rounds played`;
+  }
   renderHomeNext();
   renderHomeForm();
+  renderSeasonProgress();
 </script>
 <script src="nav.js"></script>
 </body>

@@ -94,6 +94,15 @@ main{max-width:1080px; margin:0 auto; padding:32px 20px 80px;}
 .hero-stats .num{font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:26px; color:var(--court);}
 .hero-stats .lbl{font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--ink-soft);}
 
+.progress-wrap{margin-top:22px; max-width:360px;}
+.progress-label{
+  display:flex; justify-content:space-between; margin-bottom:6px;
+  font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em;
+  color:var(--ink-soft);
+}
+.progress-bar{height:8px; background:var(--paper-line); border-radius:999px; overflow:hidden;}
+.progress-fill{height:100%; background:var(--ball); border-radius:999px; transition:width .3s ease;}
+
 /* scorecard motif */
 .scorecard{
   background:var(--white);
@@ -188,6 +197,12 @@ tbody tr:hover{background:#FBFAF6;}
 .pill.done{background:var(--ball); color:var(--court-dark); border-color:var(--ball-dark);}
 
 /* ---------- Fixtures ---------- */
+.fixtures-filter{display:flex; align-items:center; gap:10px; margin-bottom:18px; font-size:13.5px;}
+.fixtures-filter label{font-weight:600; color:var(--ink-soft);}
+.fixtures-filter select{
+  font-family:'IBM Plex Sans', sans-serif; font-size:13.5px; padding:7px 10px;
+  border:1px solid var(--paper-line); border-radius:8px; background:var(--white); color:var(--ink);
+}
 .round-block{margin-bottom:14px;}
 .round-head{
   display:flex; align-items:center; gap:10px; margin-bottom:8px;
@@ -259,6 +274,11 @@ tbody tr:hover{background:#FBFAF6;}
 }
 .tie-note.stat-win{color:var(--ink); font-weight:700;}
 .tie-note.stat-loss{color:var(--ink-soft); font-weight:500; opacity:0.75;}
+tr.cut-marker-row td{
+  padding:6px 12px; font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:0.08em; color:var(--court); background:var(--paper);
+  border-top:2px solid var(--ball-dark); text-align:center;
+}
 
 @media (max-width:640px){
   body[data-page="ladder"] thead th,
@@ -269,6 +289,16 @@ tbody tr:hover{background:#FBFAF6;}
   body[data-page="ladder"] .played-label-short{display:inline;}
 }
 .played-label-short{display:none;}
+
+/* ---------- Records ---------- */
+.records-grid{
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(220px,1fr)); gap:16px;
+}
+.record-card .record-value{
+  font-family:'IBM Plex Mono', monospace; font-size:28px; font-weight:700;
+  color:var(--court); margin:2px 0 6px;
+}
+.record-card .record-detail{font-size:12.5px; color:var(--ink-soft); line-height:1.5;}
 
 /* ---------- Teams ---------- */
 .team-grid{
@@ -294,6 +324,8 @@ tbody tr:hover{background:#FBFAF6;}
   display:flex; align-items:center; gap:10px;
 }
 .bracket-date{font-size:12px; color:var(--ink-soft); font-weight:400; font-family:'IBM Plex Sans';}
+.bracket-note{font-size:11.5px; color:var(--ink-soft); margin:0 0 8px;}
+.bracket-rank{font-size:11px; color:var(--ink-soft); font-weight:400;}
 .bracket-matches{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; margin-top:10px;}
 .bmatch{
   border:1px dashed var(--paper-line); border-radius:9px; padding:10px 12px;

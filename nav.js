@@ -1,10 +1,11 @@
 // Shared top nav + footer, injected into every page.
-// Each page sets <body data-page="home|fixtures|ladder|teams|finals|rules">.
+// Each page sets <body data-page="home|fixtures|ladder|records|teams|finals|rules">.
 (function(){
   const PAGES = [
     { key: "home",     label: "Home",     href: "index.html" },
     { key: "fixtures", label: "Fixtures", href: "fixtures.html" },
     { key: "ladder",   label: "Ladder",   href: "ladder.html" },
+    { key: "records",  label: "Records",  href: "records.html" },
     { key: "teams",    label: "Teams",    href: "teams.html" },
     { key: "finals",   label: "Finals",   href: "finals.html" },
     { key: "rules",    label: "Rules",    href: "rules.html" },

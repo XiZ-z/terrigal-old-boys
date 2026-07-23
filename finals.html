@@ -18,10 +18,11 @@
   <div class="bracket">
     <div class="bracket-stage">
       <h4>Elimination round <span class="bracket-date">Wed 25 Nov</span></h4>
+      <p class="bracket-note" id="finals-note"></p>
       <div class="bracket-matches">
-        <div class="bmatch"><div class="lbl">Game 1</div>1st v 6th</div>
-        <div class="bmatch"><div class="lbl">Game 2</div>2nd v 5th</div>
-        <div class="bmatch"><div class="lbl">Game 3</div>3rd v 4th</div>
+        <div class="bmatch"><div class="lbl">Game 1</div><span id="game1">1st v 6th</span></div>
+        <div class="bmatch"><div class="lbl">Game 2</div><span id="game2">2nd v 5th</span></div>
+        <div class="bmatch"><div class="lbl">Game 3</div><span id="game3">3rd v 4th</span></div>
       </div>
     </div>
     <div class="bracket-stage">
@@ -42,6 +43,44 @@
 
 <div id="footer-placeholder"></div>
 
+<script src="data.js"></script>
+<script>
+  function ordinal(n){
+    if(n === 1) return '1st';
+    if(n === 2) return '2nd';
+    if(n === 3) return '3rd';
+    return `${n}th`;
+  }
+
+  function renderFinals(){
+    const totalRounds = ALL_ROUNDS.length;
+    const next = getNextRound();
+    const roundsPlayed = next ? next.roundNum - 1 : totalRounds;
+    const rankLabel = (rankA, rankB) => `${ordinal(rankA)} v ${ordinal(rankB)}`;
+
+    if(roundsPlayed === 0){
+      document.getElementById('finals-note').textContent = 'Standings will appear here once Round 1 results are entered.';
+      document.getElementById('game1').textContent = rankLabel(1, 6);
+      document.getElementById('game2').textContent = rankLabel(2, 5);
+      document.getElementById('game3').textContent = rankLabel(3, 4);
+      return;
+    }
+
+    document.getElementById('finals-note').textContent = next
+      ? `Provisional — based on standings through Round ${roundsPlayed}.`
+      : 'Final standings — round robin complete.';
+
+    const rows = computeLadder();
+    const matchLabel = (rankA, rankB) => {
+      const a = rows[rankA - 1], b = rows[rankB - 1];
+      return `Team ${a.team} v Team ${b.team} <span class="bracket-rank">(${rankLabel(rankA, rankB)})</span>`;
+    };
+    document.getElementById('game1').innerHTML = matchLabel(1, 6);
+    document.getElementById('game2').innerHTML = matchLabel(2, 5);
+    document.getElementById('game3').innerHTML = matchLabel(3, 4);
+  }
+  renderFinals();
+</script>
 <script src="nav.js"></script>
 </body>
 </html>

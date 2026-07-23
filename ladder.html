@@ -85,11 +85,29 @@
     return notes;
   }
 
+  const FINALS_CUTOFF = 6; // top 6 make the finals series (see rules.html)
+
+  function cutNote(rows, i){
+    if(i === FINALS_CUTOFF - 1 && rows.length > FINALS_CUTOFF){
+      const gap = rows[i].points - rows[FINALS_CUTOFF].points;
+      return gap > 0
+        ? `<span class="tie-note stat-win">${gap} clear of finals cut</span>`
+        : `<span class="tie-note stat-win">Ahead of 7th on countback</span>`;
+    }
+    if(i === FINALS_CUTOFF){
+      const gap = rows[FINALS_CUTOFF - 1].points - rows[i].points;
+      return gap > 0
+        ? `<span class="tie-note stat-loss">${gap} off finals</span>`
+        : `<span class="tie-note stat-loss">Behind 6th on countback</span>`;
+    }
+    return '';
+  }
+
   function renderLadder(){
     const rows = computeLadder();
     const tieNotes = buildTieNotes(rows);
     const body = document.getElementById('ladder-body');
-    body.innerHTML = rows.map((r, i) => `
+    const rowHtml = rows.map((r, i) => `
       <tr>
         <td class="rank-cell">${i+1}</td>
         <td><strong>Team ${r.team}</strong></td>
@@ -97,9 +115,13 @@
         <td class="mono-cell num-col">${recordCell(r.form)}</td>
         <td class="mono-cell num-col">${statCell(r.setsFor, r.setsAgainst)}<span class="diff-line">${formatDiff(r.setsFor - r.setsAgainst)}</span></td>
         <td class="mono-cell num-col">${statCell(r.gamesFor, r.gamesAgainst)}<span class="diff-line">${formatDiff(r.gamesFor - r.gamesAgainst)}</span></td>
-        <td class="mono-cell num-col">${r.points}${tieNotes[i]}</td>
+        <td class="mono-cell num-col">${r.points}${tieNotes[i]}${cutNote(rows, i)}</td>
       </tr>
-    `).join('');
+    `);
+    if(rows.length > FINALS_CUTOFF){
+      rowHtml.splice(FINALS_CUTOFF, 0, `<tr class="cut-marker-row"><td colspan="7">Top ${FINALS_CUTOFF} make the finals series</td></tr>`);
+    }
+    body.innerHTML = rowHtml.join('');
   }
   renderLadder();
 </script>

@@ -124,6 +124,51 @@ function computeLadder(){
       || (y.gamesFor-y.gamesAgainst)-(x.gamesFor-x.gamesAgainst));
 }
 
+// ---------- Season records (biggest wins, closest match, longest streaks) ----------
+function getAllPlayedMatches(){
+  const matches = [];
+  ALL_ROUNDS.forEach((pairs, idx) => {
+    const roundNum = idx+1;
+    pairs.forEach((m, courtIdx) => {
+      const key = `${roundNum}-${courtIdx}`;
+      const r = RESULTS[key];
+      if(!r) return;
+      matches.push({ roundNum, teamA: m[0], teamB: m[1], ...r });
+    });
+  });
+  return matches;
+}
+
+function computeSeasonRecords(){
+  const matches = getAllPlayedMatches();
+  if(matches.length === 0) return null;
+
+  let biggestWin = null, closest = null, mostLopsidedSets = null;
+  matches.forEach(m => {
+    const gameDiff = Math.abs(m.gamesA - m.gamesB);
+    const setDiff = Math.abs(m.setsA - m.setsB);
+    if(!biggestWin || gameDiff > biggestWin.gameDiff) biggestWin = { ...m, gameDiff };
+    if(!closest || gameDiff < closest.gameDiff) closest = { ...m, gameDiff };
+    if(!mostLopsidedSets || setDiff > mostLopsidedSets.setDiff) mostLopsidedSets = { ...m, setDiff };
+  });
+
+  const rows = computeLadder();
+  let bestWinStreak = null, bestLossStreak = null;
+  rows.forEach(r => {
+    let curW=0, maxW=0, curL=0, maxL=0;
+    r.form.forEach(o => {
+      curW = o === 'W' ? curW+1 : 0;
+      curL = o === 'L' ? curL+1 : 0;
+      if(curW > maxW) maxW = curW;
+      if(curL > maxL) maxL = curL;
+    });
+    if(maxW > 0 && (!bestWinStreak || maxW > bestWinStreak.streak)) bestWinStreak = { team: r.team, streak: maxW };
+    if(maxL > 0 && (!bestLossStreak || maxL > bestLossStreak.streak)) bestLossStreak = { team: r.team, streak: maxL };
+  });
+
+  return { biggestWin, closest, mostLopsidedSets, bestWinStreak, bestLossStreak };
+}
+
 // ---------- Next match night (first round with no results entered yet) ----------
 function getNextRound(){
   for(let idx=0; idx<ALL_ROUNDS.length; idx++){
