@@ -50,7 +50,7 @@
         .sort((a, b) => a.court - b.court);
       if(teamFilter && courtsInOrder.length === 0) return;
       html += `<div class="round-block${isNext ? ' round-block--next' : ''}"><div class="round-head"><span class="round-num">RD ${roundNum}</span><span class="round-date">${DATES[idx]}</span>${nextTag}</div>`;
-      html += `<div class="table-wrap"><table><thead><tr><th style="width:64px;">Crt</th><th>Match</th><th>Sets</th><th>Games</th><th>Points</th></tr></thead><tbody>`;
+      html += `<div class="table-wrap"><table><thead><tr><th class="crt-col">Crt</th><th>Match</th><th>Sets</th><th>Games</th><th>Points</th></tr></thead><tbody>`;
       courtsInOrder.forEach(({ m, slotIdx, court }) => {
         const key = `${roundNum}-${slotIdx}`;
         const r = RESULTS[key];
@@ -60,18 +60,19 @@
         }
         const bp = matchPoints(r);
         const setsBonusTxt = bp.setsBonusA === 1
-          ? `<span class="pill">sets tied · +1 each</span>`
-          : `<span class="pill done">+2 sets bonus → Team ${bp.setsBonusA ? m[0] : m[1]}</span>`;
+          ? `Sets tied · +1 each`
+          : `+2 sets bonus &rarr; Team ${bp.setsBonusA ? m[0] : m[1]}`;
         const gamesBonusTxt = bp.gamesBonusA === 1
-          ? `<span class="pill">games tied · +1 each</span>`
-          : `<span class="pill done">+2 games bonus → Team ${bp.gamesBonusA ? m[0] : m[1]}</span>`;
+          ? `Games tied · +1 each`
+          : `+2 games bonus &rarr; Team ${bp.gamesBonusA ? m[0] : m[1]}`;
         html += `<tr>
           <td class="mono-cell crt-cell">CRT ${court}</td>
           <td class="match-cell">Team ${m[0]} v Team ${m[1]}</td>
-          <td class="mono-cell" data-label="Sets"><span class="stat-block">${r.setsA}–${r.setsB}<br>${setsBonusTxt}</span></td>
-          <td class="mono-cell" data-label="Games"><span class="stat-block">${r.gamesA}–${r.gamesB}<br>${gamesBonusTxt}</span></td>
-          <td class="mono-cell" data-label="Points"><span class="stat-block"><strong>${bp.totalA}–${bp.totalB}</strong></span></td>
-        </tr>`;
+          <td class="mono-cell" data-label="Sets">${r.setsA}&ndash;${r.setsB}</td>
+          <td class="mono-cell" data-label="Games">${r.gamesA}&ndash;${r.gamesB}</td>
+          <td class="mono-cell" data-label="Points"><strong>${bp.totalA}&ndash;${bp.totalB}</strong></td>
+        </tr>
+        <tr class="note-row"><td colspan="5">${setsBonusTxt} <span class="cap-sep">&middot;</span> ${gamesBonusTxt}</td></tr>`;
       });
       html += `</tbody></table></div></div>`;
     });
