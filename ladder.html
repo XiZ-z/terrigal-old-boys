@@ -103,39 +103,31 @@
     return '';
   }
 
-  function rowCaption(rows, tieNotes, i){
-    const r = rows[i];
-    const parts = [
-      `Sets ${formatDiff(r.setsFor - r.setsAgainst)}`,
-      `Games ${formatDiff(r.gamesFor - r.gamesAgainst)}`,
-    ];
+  function noteRow(rows, tieNotes, i){
+    const parts = [];
     if(tieNotes[i]) parts.push(tieNotes[i]);
     const cn = cutNote(rows, i);
     if(cn) parts.push(cn);
-    return parts.join(' <span class="cap-sep">&middot;</span> ');
+    if(parts.length === 0) return '';
+    return `<tr class="note-row"><td colspan="7">${parts.join(' <span class="cap-sep">&middot;</span> ')}</td></tr>`;
   }
 
   function renderLadder(){
     const rows = computeLadder();
     const tieNotes = buildTieNotes(rows);
     const body = document.getElementById('ladder-body');
-    const rowHtml = rows.map((r, i) => {
-      const caption = rowCaption(rows, tieNotes, i);
-      return `
+    const rowHtml = rows.map((r, i) => `
       <tr>
         <td class="rank-cell">${i+1}</td>
-        <td>
-          <strong>Team ${r.team}</strong>
-          ${caption ? `<div class="row-caption">${caption}</div>` : ''}
-        </td>
+        <td><strong>Team ${r.team}</strong></td>
         <td class="mono-cell num-col">${r.played}</td>
         <td class="mono-cell num-col">${recordCell(r.form)}</td>
         <td class="mono-cell num-col">${statCell(r.setsFor, r.setsAgainst)}<span class="diff-line">${formatDiff(r.setsFor - r.setsAgainst)}</span></td>
         <td class="mono-cell num-col">${statCell(r.gamesFor, r.gamesAgainst)}<span class="diff-line">${formatDiff(r.gamesFor - r.gamesAgainst)}</span></td>
         <td class="mono-cell num-col">${r.points}</td>
       </tr>
-    `;
-    });
+      ${noteRow(rows, tieNotes, i)}
+    `);
     if(rows.length > FINALS_CUTOFF){
       rowHtml.splice(FINALS_CUTOFF, 0, `<tr class="cut-marker-row"><td colspan="7">Top ${FINALS_CUTOFF} make the finals series</td></tr>`);
     }
