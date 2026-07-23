@@ -270,10 +270,15 @@ tbody tr:hover{background:#FBFAF6;}
 .cap-sep{color:var(--paper-line); margin:0 1px;}
 .tie-note.stat-win{color:var(--ink); font-weight:700;}
 .tie-note.stat-loss{color:var(--ink-soft); font-weight:500; opacity:0.85;}
-tr.cut-marker-row td, tr.note-row td{
+tr.cut-marker-row td{
   padding:6px 12px; font-size:10px; font-weight:700; text-transform:uppercase;
   letter-spacing:0.08em; color:var(--court); background:var(--paper);
   border-top:2px solid var(--ball-dark); text-align:center;
+}
+tr.note-row td{
+  padding:0 12px 8px; font-size:10.5px; font-weight:500;
+  color:var(--ink-soft); background:var(--white); text-align:center;
+  border-top:none;
 }
 
 @media (max-width:640px){
