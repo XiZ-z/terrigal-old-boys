@@ -33,7 +33,22 @@ const FINALS_DATES = {
 // setsA/setsB: out of 6 total sets, can include .5 (a 4-4 set is a draw).
 // gamesA/gamesB: total games across all 6 sets, always sums to 48.
 const RESULTS = {
-  // Cleared for the real season -- add real results here once played.
+  // Sample data for dev preview only -- rounds 1-3. Cleared before the real season.
+  // Round 1 — Team 1 v Team 8, Team 2 v Team 7, Team 3 v Team 6, Team 4 v Team 5
+  "1-0": { setsA: 4,   setsB: 2,   gamesA: 27, gamesB: 21 },
+  "1-1": { setsA: 3.5, setsB: 2.5, gamesA: 25, gamesB: 23 },
+  "1-2": { setsA: 6,   setsB: 0,   gamesA: 30, gamesB: 18 },
+  "1-3": { setsA: 2,   setsB: 4,   gamesA: 20, gamesB: 28 },
+  // Round 2 — Team 1 v Team 7, Team 8 v Team 6, Team 2 v Team 5, Team 3 v Team 4
+  "2-0": { setsA: 4.5, setsB: 1.5, gamesA: 28, gamesB: 20 },
+  "2-1": { setsA: 2.5, setsB: 3.5, gamesA: 23, gamesB: 25 },
+  "2-2": { setsA: 3,   setsB: 3,   gamesA: 22, gamesB: 26 },
+  "2-3": { setsA: 4,   setsB: 2,   gamesA: 26, gamesB: 22 },
+  // Round 3 — Team 1 v Team 6, Team 7 v Team 5, Team 8 v Team 4, Team 2 v Team 3
+  "3-0": { setsA: 5,   setsB: 1,   gamesA: 31, gamesB: 17 },
+  "3-1": { setsA: 2,   setsB: 4,   gamesA: 19, gamesB: 29 },
+  "3-2": { setsA: 3.5, setsB: 2.5, gamesA: 21, gamesB: 27 },
+  "3-3": { setsA: 1.5, setsB: 4.5, gamesA: 18, gamesB: 30 },
 };
 
 // ---------- Court display ----------
@@ -79,7 +94,7 @@ function matchPoints(r){
 // (across the whole competition), then overall game differential.
 function computeLadder(){
   const teams = {};
-  for(let t=1;t<=8;t++){ teams[t] = { played:0, setsFor:0, setsAgainst:0, gamesFor:0, gamesAgainst:0, points:0 }; }
+  for(let t=1;t<=8;t++){ teams[t] = { played:0, setsFor:0, setsAgainst:0, gamesFor:0, gamesAgainst:0, points:0, form:[] }; }
 
   ALL_ROUNDS.forEach((pairs, idx) => {
     const roundNum = idx+1;
@@ -96,6 +111,9 @@ function computeLadder(){
       teams[b].gamesFor += r.gamesB; teams[b].gamesAgainst += r.gamesA;
       teams[a].points += bp.totalA;
       teams[b].points += bp.totalB;
+      const outcome = bp.totalA === bp.totalB ? 'D' : (bp.totalA > bp.totalB ? 'W' : 'L');
+      teams[a].form.push(outcome);
+      teams[b].form.push(outcome === 'D' ? 'D' : (outcome === 'W' ? 'L' : 'W'));
     });
   });
 
@@ -104,6 +122,51 @@ function computeLadder(){
     .sort((x,y) => y.points - x.points
       || (y.setsFor-y.setsAgainst)-(x.setsFor-x.setsAgainst)
       || (y.gamesFor-y.gamesAgainst)-(x.gamesFor-x.gamesAgainst));
+}
+
+// ---------- Season records (biggest wins, closest match, longest streaks) ----------
+function getAllPlayedMatches(){
+  const matches = [];
+  ALL_ROUNDS.forEach((pairs, idx) => {
+    const roundNum = idx+1;
+    pairs.forEach((m, courtIdx) => {
+      const key = `${roundNum}-${courtIdx}`;
+      const r = RESULTS[key];
+      if(!r) return;
+      matches.push({ roundNum, teamA: m[0], teamB: m[1], ...r });
+    });
+  });
+  return matches;
+}
+
+function computeSeasonRecords(){
+  const matches = getAllPlayedMatches();
+  if(matches.length === 0) return null;
+
+  let biggestWin = null, closest = null, mostLopsidedSets = null;
+  matches.forEach(m => {
+    const gameDiff = Math.abs(m.gamesA - m.gamesB);
+    const setDiff = Math.abs(m.setsA - m.setsB);
+    if(!biggestWin || gameDiff > biggestWin.gameDiff) biggestWin = { ...m, gameDiff };
+    if(!closest || gameDiff < closest.gameDiff) closest = { ...m, gameDiff };
+    if(!mostLopsidedSets || setDiff > mostLopsidedSets.setDiff) mostLopsidedSets = { ...m, setDiff };
+  });
+
+  const rows = computeLadder();
+  let bestWinStreak = null, bestLossStreak = null;
+  rows.forEach(r => {
+    let curW=0, maxW=0, curL=0, maxL=0;
+    r.form.forEach(o => {
+      curW = o === 'W' ? curW+1 : 0;
+      curL = o === 'L' ? curL+1 : 0;
+      if(curW > maxW) maxW = curW;
+      if(curL > maxL) maxL = curL;
+    });
+    if(maxW > 0 && (!bestWinStreak || maxW > bestWinStreak.streak)) bestWinStreak = { team: r.team, streak: maxW };
+    if(maxL > 0 && (!bestLossStreak || maxL > bestLossStreak.streak)) bestLossStreak = { team: r.team, streak: maxL };
+  });
+
+  return { biggestWin, closest, mostLopsidedSets, bestWinStreak, bestLossStreak };
 }
 
 // ---------- Next match night (first round with no results entered yet) ----------

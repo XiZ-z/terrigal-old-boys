@@ -5,7 +5,7 @@ or host the folder as-is on any static host (Netlify, GitHub Pages, etc.).
 
 ## Files
 
-- `index.html`, `fixtures.html`, `ladder.html`, `teams.html`, `finals.html`, `rules.html` — the six pages
+- `index.html`, `fixtures.html`, `ladder.html`, `records.html`, `teams.html`, `finals.html`, `rules.html` — the seven pages
 - `data.js` — season structure, weekly results, and all scoring/ladder logic
 - `nav.js` — injects the shared top nav + footer on every page
 - `styles.css` — shared styling

@@ -15,6 +15,20 @@
 <main>
   <div class="section-title">Fixtures</div>
   <p class="section-sub">Full draw across 4 courts. Results fill in as each round is scanned in.</p>
+  <div class="fixtures-filter">
+    <label for="team-filter">Show</label>
+    <select id="team-filter">
+      <option value="">All teams</option>
+      <option value="1">Team 1</option>
+      <option value="2">Team 2</option>
+      <option value="3">Team 3</option>
+      <option value="4">Team 4</option>
+      <option value="5">Team 5</option>
+      <option value="6">Team 6</option>
+      <option value="7">Team 7</option>
+      <option value="8">Team 8</option>
+    </select>
+  </div>
   <div id="fixtures-list"></div>
 </main>
 
@@ -22,7 +36,7 @@
 
 <script src="data.js"></script>
 <script>
-  function renderFixtures(){
+  function renderFixtures(teamFilter){
     const el = document.getElementById('fixtures-list');
     const next = getNextRound();
     let html = '';
@@ -30,42 +44,61 @@
       const roundNum = idx+1;
       const isNext = next && next.roundNum === roundNum;
       const nextTag = isNext ? `<span class="pill next-tag">Next</span>` : '';
-      html += `<div class="round-block${isNext ? ' round-block--next' : ''}"><div class="round-head"><span class="round-num">RD ${roundNum}</span><span class="round-date">${DATES[idx]}</span>${nextTag}</div>`;
-      html += `<div class="table-wrap"><table><thead><tr><th style="width:64px;">Crt</th><th>Match</th><th>Sets</th><th>Games</th><th>Points</th></tr></thead><tbody>`;
       const courtsInOrder = pairs
         .map((m, slotIdx) => ({ m, slotIdx, court: displayCourt(roundNum, slotIdx) }))
+        .filter(({ m }) => !teamFilter || m[0] === teamFilter || m[1] === teamFilter)
         .sort((a, b) => a.court - b.court);
+      if(teamFilter && courtsInOrder.length === 0) return;
+      html += `<div class="round-block${isNext ? ' round-block--next' : ''}"><div class="round-head"><span class="round-num">RD ${roundNum}</span><span class="round-date">${DATES[idx]}</span>${nextTag}</div>`;
+      html += `<div class="table-wrap"><table><thead><tr><th class="crt-col">Crt</th><th>Match</th><th class="num-col">Sets</th><th class="num-col">Games</th><th class="num-col">Points</th></tr></thead><tbody>`;
       courtsInOrder.forEach(({ m, slotIdx, court }) => {
         const key = `${roundNum}-${slotIdx}`;
         const r = RESULTS[key];
         if(!r){
-          html += `<tr><td class="mono-cell crt-cell">CRT ${court}</td><td class="match-cell">Team ${m[0]} v Team ${m[1]}</td><td colspan="3"><span class="pill">Upcoming</span></td></tr>`;
+          html += `<tr><td class="mono-cell crt-cell">CRT ${court}</td><td class="match-cell">Team ${m[0]} v Team ${m[1]}</td><td colspan="3" class="num-col"><span class="pill">Upcoming</span></td></tr>`;
           return;
         }
         const bp = matchPoints(r);
-        const setsBonusTxt = bp.setsBonusA === 1
-          ? `<span class="pill">sets tied · +1 each</span>`
-          : `<span class="pill done">+2 sets bonus → Team ${bp.setsBonusA ? m[0] : m[1]}</span>`;
-        const gamesBonusTxt = bp.gamesBonusA === 1
-          ? `<span class="pill">games tied · +1 each</span>`
-          : `<span class="pill done">+2 games bonus → Team ${bp.gamesBonusA ? m[0] : m[1]}</span>`;
+        const setsWinner = bp.setsBonusA === 1 ? null : (bp.setsBonusA ? m[0] : m[1]);
+        const gamesWinner = bp.gamesBonusA === 1 ? null : (bp.gamesBonusA ? m[0] : m[1]);
+        let bonusHtml;
+        if(setsWinner !== null && setsWinner === gamesWinner){
+          bonusHtml = `<span class="pill done">+2 sets &amp; games bonus &rarr; Team ${setsWinner}</span>`;
+        } else {
+          const setsTxt = setsWinner === null
+            ? `<span class="pill">Sets tied · +1 each</span>`
+            : `<span class="pill done">+2 sets &rarr; Team ${setsWinner}</span>`;
+          const gamesTxt = gamesWinner === null
+            ? `<span class="pill">Games tied · +1 each</span>`
+            : `<span class="pill done">+2 games &rarr; Team ${gamesWinner}</span>`;
+          bonusHtml = `${setsTxt} ${gamesTxt}`;
+        }
         html += `<tr>
           <td class="mono-cell crt-cell">CRT ${court}</td>
           <td class="match-cell">Team ${m[0]} v Team ${m[1]}</td>
-          <td class="mono-cell" data-label="Sets"><span class="stat-block">${r.setsA}–${r.setsB}<br>${setsBonusTxt}</span></td>
-          <td class="mono-cell" data-label="Games"><span class="stat-block">${r.gamesA}–${r.gamesB}<br>${gamesBonusTxt}</span></td>
-          <td class="mono-cell" data-label="Points"><span class="stat-block"><strong>${bp.totalA}–${bp.totalB}</strong></span></td>
-        </tr>`;
+          <td class="mono-cell num-col" data-label="Sets">${r.setsA}&ndash;${r.setsB}</td>
+          <td class="mono-cell num-col" data-label="Games">${r.gamesA}&ndash;${r.gamesB}</td>
+          <td class="mono-cell num-col" data-label="Points"><strong>${bp.totalA}&ndash;${bp.totalB}</strong></td>
+        </tr>
+        <tr class="note-row"><td colspan="5">${bonusHtml}</td></tr>`;
       });
       html += `</tbody></table></div></div>`;
     });
-    RESERVE_DATES.forEach((date, i) => {
-      html += `<div class="round-block"><div class="round-head"><span class="round-num">RD ${15+i}</span><span class="round-date">${date}</span></div>
-        <div class="table-wrap"><table><tbody><tr><td style="padding:14px;"><span class="pill wet">Wet weather reserve</span> — only played if a round robin week is postponed</td></tr></tbody></table></div></div>`;
-    });
+    if(!teamFilter){
+      RESERVE_DATES.forEach((date, i) => {
+        html += `<div class="round-block"><div class="round-head"><span class="round-num">RD ${15+i}</span><span class="round-date">${date}</span></div>
+          <div class="table-wrap"><table><tbody><tr><td style="padding:14px;"><span class="pill wet">Wet weather reserve</span> — only played if a round robin week is postponed</td></tr></tbody></table></div></div>`;
+      });
+    }
     el.innerHTML = html;
   }
-  renderFixtures();
+  document.getElementById('team-filter').addEventListener('change', (e) => {
+    renderFixtures(e.target.value ? Number(e.target.value) : null);
+  });
+  const queryTeam = new URLSearchParams(location.search).get('team');
+  const initialTeam = queryTeam ? Number(queryTeam) : null;
+  if(initialTeam) document.getElementById('team-filter').value = String(initialTeam);
+  renderFixtures(initialTeam);
 </script>
 <script src="nav.js"></script>
 </body>

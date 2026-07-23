@@ -94,6 +94,15 @@ main{max-width:1080px; margin:0 auto; padding:32px 20px 80px;}
 .hero-stats .num{font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:26px; color:var(--court);}
 .hero-stats .lbl{font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--ink-soft);}
 
+.progress-wrap{margin-top:22px; max-width:360px;}
+.progress-label{
+  display:flex; justify-content:space-between; margin-bottom:6px;
+  font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em;
+  color:var(--ink-soft);
+}
+.progress-bar{height:8px; background:var(--paper-line); border-radius:999px; overflow:hidden;}
+.progress-fill{height:100%; background:var(--ball); border-radius:999px; transition:width .3s ease;}
+
 /* scorecard motif */
 .scorecard{
   background:var(--white);
@@ -125,12 +134,26 @@ main{max-width:1080px; margin:0 auto; padding:32px 20px 80px;}
   padding:2px 7px; margin-right:10px;
 }
 .court-row .match{font-weight:600;}
+.court-row .match a{color:inherit; text-decoration:none;}
+.court-row .match a:hover{text-decoration:underline;}
 
 .section-title{
   font-family:'Bebas Neue'; font-size:26px; color:var(--court-dark);
   margin:0 0 4px; letter-spacing:0.02em;
 }
 .section-sub{color:var(--ink-soft); font-size:13.5px; margin:0 0 18px;}
+
+details.glance summary{
+  cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px;
+}
+details.glance summary::-webkit-details-marker{display:none;}
+details.glance summary .section-title{margin:0; flex:1;}
+details.glance summary::after{
+  content:'+'; font-family:'IBM Plex Mono'; font-size:18px; font-weight:600;
+  color:var(--ink-soft); flex:0 0 auto;
+}
+details.glance[open] summary::after{content:'\2212';}
+details.glance .section-sub{margin-top:10px;}
 
 /* ---------- Tables shared ---------- */
 .table-wrap{
@@ -148,14 +171,42 @@ tbody td{padding:10px 12px; border-top:1px solid var(--paper-line);}
 tbody tr:hover{background:#FBFAF6;}
 .mono-cell{font-family:'IBM Plex Mono'; font-weight:600;}
 .pill{
-  display:inline-block; font-size:11px; font-weight:600; padding:2px 8px;
+  display:inline-block; white-space:nowrap; font-size:11px; font-weight:600; padding:2px 8px;
   border-radius:20px; background:var(--paper); color:var(--ink-soft);
   border:1px solid var(--paper-line);
 }
 .pill.wet{background:#EAF2E9; color:#3E6B4A; border-color:#CFE0CC;}
+
+/* ---------- Recent form (home) ---------- */
+.form-wrap{margin-bottom:32px;}
+.form-row{
+  display:flex; align-items:center; gap:12px; padding:10px 12px;
+  border-top:1px solid var(--paper-line);
+}
+.form-row:first-child{border-top:none;}
+.form-rank{font-family:'IBM Plex Mono'; font-weight:600; font-size:12px; color:var(--ink-soft); width:18px;}
+.form-team{font-weight:600; font-size:14px; flex:1;}
+.form-team a{color:inherit; text-decoration:none;}
+.form-team a:hover{text-decoration:underline;}
+.form-dots{display:flex; gap:5px;}
+.form-dot{
+  display:flex; align-items:center; justify-content:center;
+  width:22px; height:22px; border-radius:50%;
+  font-family:'IBM Plex Mono'; font-size:10.5px; font-weight:700;
+}
+.form-dot--w{background:var(--ball); color:var(--court-dark);}
+.form-dot--d{background:var(--paper-line); color:var(--ink-soft);}
+.form-dot--l{background:var(--clay); color:var(--white);}
+.form-dot--empty{background:var(--paper); color:var(--ink-soft); border:1px dashed var(--paper-line);}
 .pill.done{background:var(--ball); color:var(--court-dark); border-color:var(--ball-dark);}
 
 /* ---------- Fixtures ---------- */
+.fixtures-filter{display:flex; align-items:center; gap:10px; margin-bottom:18px; font-size:13.5px;}
+.fixtures-filter label{font-weight:600; color:var(--ink-soft);}
+.fixtures-filter select{
+  font-family:'IBM Plex Sans', sans-serif; font-size:13.5px; padding:7px 10px;
+  border:1px solid var(--paper-line); border-radius:8px; background:var(--white); color:var(--ink);
+}
 .round-block{margin-bottom:14px;}
 .round-head{
   display:flex; align-items:center; gap:10px; margin-bottom:8px;
@@ -171,39 +222,15 @@ tbody tr:hover{background:#FBFAF6;}
   padding:10px 10px 2px;
 }
 .round-block--next .table-wrap{border:none;}
+.crt-col{width:64px;}
 
-/* Fixtures: collapse squeezed table columns into stacked cards below 640px */
 @media (max-width:640px){
-  .round-block .table-wrap table,
-  .round-block .table-wrap tbody,
-  .round-block .table-wrap tr,
-  .round-block .table-wrap td{
-    display:block; width:100%;
+  body[data-page="fixtures"] thead th,
+  body[data-page="fixtures"] tbody td{
+    padding-left:5px; padding-right:5px;
   }
-  .round-block .table-wrap thead{display:none;}
-  .round-block .table-wrap{background:transparent; border:none; overflow:visible;}
-  .round-block .table-wrap tr{
-    background:var(--white); border:1px solid var(--paper-line); border-radius:12px;
-    margin-bottom:10px; overflow:hidden;
-  }
-  .round-block .table-wrap td{
-    padding:9px 14px; border-top:1px dashed var(--paper-line);
-  }
-  .round-block .table-wrap td.crt-cell{
-    border-top:none; padding-bottom:0; font-size:11px; color:var(--ink-soft);
-  }
-  .round-block .table-wrap td.match-cell{
-    border-top:none; padding-top:2px; font-weight:700; font-size:15.5px; color:var(--court-dark);
-  }
-  .round-block .table-wrap td[data-label]{
-    display:flex; justify-content:space-between; align-items:flex-start; gap:12px;
-  }
-  .round-block .table-wrap td[data-label]::before{
-    content:attr(data-label);
-    font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em;
-    color:var(--ink-soft); flex-shrink:0; padding-top:1px;
-  }
-  .round-block .table-wrap td[data-label] .stat-block{text-align:right;}
+  body[data-page="fixtures"] table{font-size:11.5px;}
+  body[data-page="fixtures"] .crt-col{width:auto;}
 }
 
 /* ---------- Ladder ---------- */
@@ -220,23 +247,44 @@ tbody tr:hover{background:#FBFAF6;}
   display:block; font-size:10px; font-weight:500; color:var(--ink-soft);
   margin-top:2px; letter-spacing:0.02em;
 }
-.tie-note{
-  display:block; white-space:normal; text-align:center;
-  font-size:9.5px; font-weight:600; color:var(--ink-soft);
-  margin-top:2px; line-height:1.3;
-}
+.cap-sep{color:var(--paper-line); margin:0 1px;}
 .tie-note.stat-win{color:var(--ink); font-weight:700;}
-.tie-note.stat-loss{color:var(--ink-soft); font-weight:500; opacity:0.75;}
+.tie-note.stat-loss{color:var(--ink-soft); font-weight:500; opacity:0.85;}
+tr.cut-marker-row td{
+  padding:6px 12px; font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:0.08em; color:var(--court); background:var(--paper);
+  border-top:2px solid var(--ball-dark); text-align:center;
+}
+tr.note-row td{
+  padding:0 12px 8px; font-family:'IBM Plex Mono'; font-size:10px; font-weight:500;
+  letter-spacing:0.02em; color:var(--ink-soft); background:var(--white); text-align:center;
+  border-top:none;
+}
+
+body[data-page="ladder"] tbody td{vertical-align:top;}
 
 @media (max-width:640px){
   body[data-page="ladder"] thead th,
   body[data-page="ladder"] tbody td{
-    padding-left:7px; padding-right:7px;
+    padding-left:3px; padding-right:3px;
   }
+  body[data-page="ladder"] table{font-size:11.5px;}
+  body[data-page="ladder"] .th-sub{font-size:8px;}
+  body[data-page="ladder"] .rank-cell{width:18px; font-size:15px;}
   body[data-page="ladder"] .played-label-full{display:none;}
   body[data-page="ladder"] .played-label-short{display:inline;}
 }
 .played-label-short{display:none;}
+
+/* ---------- Records ---------- */
+.records-grid{
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(220px,1fr)); gap:16px;
+}
+.record-card .record-value{
+  font-family:'IBM Plex Mono', monospace; font-size:28px; font-weight:700;
+  color:var(--court); margin:2px 0 6px;
+}
+.record-card .record-detail{font-size:12.5px; color:var(--ink-soft); line-height:1.5;}
 
 /* ---------- Teams ---------- */
 .team-grid{
@@ -262,6 +310,8 @@ tbody tr:hover{background:#FBFAF6;}
   display:flex; align-items:center; gap:10px;
 }
 .bracket-date{font-size:12px; color:var(--ink-soft); font-weight:400; font-family:'IBM Plex Sans';}
+.bracket-note{font-size:11.5px; color:var(--ink-soft); margin:0 0 8px;}
+.bracket-rank{font-size:11px; color:var(--ink-soft); font-weight:400;}
 .bracket-matches{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; margin-top:10px;}
 .bmatch{
   border:1px dashed var(--paper-line); border-radius:9px; padding:10px 12px;
