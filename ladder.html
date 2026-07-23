@@ -104,7 +104,11 @@
   }
 
   function rowCaption(rows, tieNotes, i){
-    const parts = [];
+    const r = rows[i];
+    const parts = [
+      `Sets ${formatDiff(r.setsFor - r.setsAgainst)}`,
+      `Games ${formatDiff(r.gamesFor - r.gamesAgainst)}`,
+    ];
     if(tieNotes[i]) parts.push(tieNotes[i]);
     const cn = cutNote(rows, i);
     if(cn) parts.push(cn);

@@ -72,17 +72,6 @@ nav.tabs a{
 nav.tabs a:hover{background:rgba(255,255,255,0.08); color:var(--white);}
 nav.tabs a.active{background:var(--ball); color:var(--court-dark);}
 
-@media (max-width:640px){
-  .topbar-inner{flex-wrap:nowrap;}
-  nav.tabs{
-    flex-wrap:nowrap; min-width:0; overflow-x:auto;
-    -webkit-overflow-scrolling:touch;
-    scrollbar-width:none; -ms-overflow-style:none;
-  }
-  nav.tabs::-webkit-scrollbar{display:none;}
-  nav.tabs a{flex:0 0 auto;}
-}
-
 main{max-width:1080px; margin:0 auto; padding:32px 20px 80px;}
 
 /* ---------- Home ---------- */
