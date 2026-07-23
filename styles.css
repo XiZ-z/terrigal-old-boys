@@ -72,6 +72,17 @@ nav.tabs a{
 nav.tabs a:hover{background:rgba(255,255,255,0.08); color:var(--white);}
 nav.tabs a.active{background:var(--ball); color:var(--court-dark);}
 
+@media (max-width:640px){
+  .topbar-inner{flex-wrap:nowrap;}
+  nav.tabs{
+    flex-wrap:nowrap; min-width:0; overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none; -ms-overflow-style:none;
+  }
+  nav.tabs::-webkit-scrollbar{display:none;}
+  nav.tabs a{flex:0 0 auto;}
+}
+
 main{max-width:1080px; margin:0 auto; padding:32px 20px 80px;}
 
 /* ---------- Home ---------- */
@@ -263,17 +274,13 @@ tbody tr:hover{background:#FBFAF6;}
   text-transform:none; color:var(--ball); opacity:0.85; margin-top:2px;
 }
 .num-col{text-align:center; white-space:nowrap;}
-.diff-line{
-  display:block; font-size:10px; font-weight:500; color:var(--ink-soft);
-  margin-top:2px; letter-spacing:0.02em;
+.row-caption{
+  font-size:10.5px; font-weight:500; color:var(--ink-soft);
+  margin-top:2px; line-height:1.4;
 }
-.tie-note{
-  display:block; white-space:normal; text-align:center;
-  font-size:9.5px; font-weight:600; color:var(--ink-soft);
-  margin-top:2px; line-height:1.3;
-}
+.cap-sep{color:var(--paper-line); margin:0 1px;}
 .tie-note.stat-win{color:var(--ink); font-weight:700;}
-.tie-note.stat-loss{color:var(--ink-soft); font-weight:500; opacity:0.75;}
+.tie-note.stat-loss{color:var(--ink-soft); font-weight:500; opacity:0.85;}
 tr.cut-marker-row td{
   padding:6px 12px; font-size:10px; font-weight:700; text-transform:uppercase;
   letter-spacing:0.08em; color:var(--court); background:var(--paper);
