@@ -76,7 +76,7 @@
       .map((m, slotIdx) => ({ m, court: displayCourt(next.roundNum, slotIdx) }))
       .sort((a, b) => a.court - b.court);
     document.getElementById('home-next-matches').innerHTML = courtsInOrder.map(({m, court})=>
-      `<div class="court-row"><span><span class="tag">CRT ${court}</span><span class="match">Team ${m[0]} v Team ${m[1]}</span></span></div>`
+      `<div class="court-row"><span><span class="tag">CRT ${court}</span><span class="match"><a href="fixtures.html?team=${m[0]}">Team ${m[0]}</a> v <a href="fixtures.html?team=${m[1]}">Team ${m[1]}</a></span></span></div>`
     ).join('');
   }
   function renderHomeForm(){
@@ -96,7 +96,7 @@
       const dots = recent.length
         ? recent.map(o => `<span class="form-dot ${dotClass[o]}">${dotLabel[o]}</span>`).join('')
         : `<span class="form-dot form-dot--empty">&ndash;</span>`;
-      return `<div class="form-row"><span class="form-rank">${i+1}</span><span class="form-team">Team ${r.team}</span><span class="form-dots">${dots}</span></div>`;
+      return `<div class="form-row"><span class="form-rank">${i+1}</span><span class="form-team"><a href="fixtures.html?team=${r.team}">Team ${r.team}</a></span><span class="form-dots">${dots}</span></div>`;
     }).join('');
   }
   function renderSeasonProgress(){

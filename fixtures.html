@@ -95,7 +95,10 @@
   document.getElementById('team-filter').addEventListener('change', (e) => {
     renderFixtures(e.target.value ? Number(e.target.value) : null);
   });
-  renderFixtures(null);
+  const queryTeam = new URLSearchParams(location.search).get('team');
+  const initialTeam = queryTeam ? Number(queryTeam) : null;
+  if(initialTeam) document.getElementById('team-filter').value = String(initialTeam);
+  renderFixtures(initialTeam);
 </script>
 <script src="nav.js"></script>
 </body>
