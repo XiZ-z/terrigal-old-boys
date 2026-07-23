@@ -29,11 +29,14 @@
       const roundNum = idx+1;
       html += `<div class="round-block"><div class="round-head"><span class="round-num">RD ${roundNum}</span><span class="round-date">${DATES[idx]}</span></div>`;
       html += `<div class="table-wrap"><table><thead><tr><th style="width:64px;">Crt</th><th>Match</th><th>Sets</th><th>Games</th><th>Points</th></tr></thead><tbody>`;
-      pairs.forEach((m, courtIdx) => {
-        const key = `${roundNum}-${courtIdx}`;
+      const courtsInOrder = pairs
+        .map((m, slotIdx) => ({ m, slotIdx, court: displayCourt(roundNum, slotIdx) }))
+        .sort((a, b) => a.court - b.court);
+      courtsInOrder.forEach(({ m, slotIdx, court }) => {
+        const key = `${roundNum}-${slotIdx}`;
         const r = RESULTS[key];
         if(!r){
-          html += `<tr><td class="mono-cell">CRT ${courtIdx+1}</td><td>Team ${m[0]} v Team ${m[1]}</td><td colspan="3"><span class="pill">Upcoming</span></td></tr>`;
+          html += `<tr><td class="mono-cell">CRT ${court}</td><td>Team ${m[0]} v Team ${m[1]}</td><td colspan="3"><span class="pill">Upcoming</span></td></tr>`;
           return;
         }
         const bp = matchPoints(r);
@@ -44,7 +47,7 @@
           ? `<span class="pill">games tied · +1 each</span>`
           : `<span class="pill done">+2 games bonus → Team ${bp.gamesBonusA ? m[0] : m[1]}</span>`;
         html += `<tr>
-          <td class="mono-cell">CRT ${courtIdx+1}</td>
+          <td class="mono-cell">CRT ${court}</td>
           <td>Team ${m[0]} v Team ${m[1]}</td>
           <td class="mono-cell">${r.setsA}–${r.setsB}<br>${setsBonusTxt}</td>
           <td class="mono-cell">${r.gamesA}–${r.gamesB}<br>${gamesBonusTxt}</td>

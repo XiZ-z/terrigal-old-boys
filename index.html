@@ -62,8 +62,11 @@
     }
     document.getElementById('next-round-title').textContent = `Round ${next.roundNum}`;
     document.getElementById('next-round-date').textContent = `Wednesday, ${next.date}`;
-    document.getElementById('home-next-matches').innerHTML = next.pairs.map((m,i)=>
-      `<div class="court-row"><span><span class="tag">CRT ${i+1}</span><span class="match">Team ${m[0]} v Team ${m[1]}</span></span></div>`
+    const courtsInOrder = next.pairs
+      .map((m, slotIdx) => ({ m, court: displayCourt(next.roundNum, slotIdx) }))
+      .sort((a, b) => a.court - b.court);
+    document.getElementById('home-next-matches').innerHTML = courtsInOrder.map(({m, court})=>
+      `<div class="court-row"><span><span class="tag">CRT ${court}</span><span class="match">Team ${m[0]} v Team ${m[1]}</span></span></div>`
     ).join('');
   }
   renderHomeNext();
