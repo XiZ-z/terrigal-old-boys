@@ -169,7 +169,7 @@ tbody td{padding:10px 12px; border-top:1px solid var(--paper-line);}
 tbody tr:hover{background:#FBFAF6;}
 .mono-cell{font-family:'IBM Plex Mono'; font-weight:600;}
 .pill{
-  display:inline-block; font-size:11px; font-weight:600; padding:2px 8px;
+  display:inline-block; white-space:nowrap; font-size:11px; font-weight:600; padding:2px 8px;
   border-radius:20px; background:var(--paper); color:var(--ink-soft);
   border:1px solid var(--paper-line);
 }

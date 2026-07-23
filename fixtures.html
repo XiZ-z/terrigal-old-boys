@@ -59,12 +59,20 @@
           return;
         }
         const bp = matchPoints(r);
-        const setsBonusTxt = bp.setsBonusA === 1
-          ? `<span class="pill">Sets tied · +1 each</span>`
-          : `<span class="pill done">+2 sets bonus &rarr; Team ${bp.setsBonusA ? m[0] : m[1]}</span>`;
-        const gamesBonusTxt = bp.gamesBonusA === 1
-          ? `<span class="pill">Games tied · +1 each</span>`
-          : `<span class="pill done">+2 games bonus &rarr; Team ${bp.gamesBonusA ? m[0] : m[1]}</span>`;
+        const setsWinner = bp.setsBonusA === 1 ? null : (bp.setsBonusA ? m[0] : m[1]);
+        const gamesWinner = bp.gamesBonusA === 1 ? null : (bp.gamesBonusA ? m[0] : m[1]);
+        let bonusHtml;
+        if(setsWinner !== null && setsWinner === gamesWinner){
+          bonusHtml = `<span class="pill done">+2 sets &amp; games bonus &rarr; Team ${setsWinner}</span>`;
+        } else {
+          const setsTxt = setsWinner === null
+            ? `<span class="pill">Sets tied · +1 each</span>`
+            : `<span class="pill done">+2 sets &rarr; Team ${setsWinner}</span>`;
+          const gamesTxt = gamesWinner === null
+            ? `<span class="pill">Games tied · +1 each</span>`
+            : `<span class="pill done">+2 games &rarr; Team ${gamesWinner}</span>`;
+          bonusHtml = `${setsTxt} ${gamesTxt}`;
+        }
         html += `<tr>
           <td class="mono-cell crt-cell">CRT ${court}</td>
           <td class="match-cell">Team ${m[0]} v Team ${m[1]}</td>
@@ -72,7 +80,7 @@
           <td class="mono-cell num-col" data-label="Games">${r.gamesA}&ndash;${r.gamesB}</td>
           <td class="mono-cell num-col" data-label="Points"><strong>${bp.totalA}&ndash;${bp.totalB}</strong></td>
         </tr>
-        <tr class="note-row"><td colspan="5">${setsBonusTxt} ${gamesBonusTxt}</td></tr>`;
+        <tr class="note-row"><td colspan="5">${bonusHtml}</td></tr>`;
       });
       html += `</tbody></table></div></div>`;
     });
