@@ -132,6 +132,18 @@ main{max-width:1080px; margin:0 auto; padding:32px 20px 80px;}
 }
 .section-sub{color:var(--ink-soft); font-size:13.5px; margin:0 0 18px;}
 
+details.glance summary{
+  cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px;
+}
+details.glance summary::-webkit-details-marker{display:none;}
+details.glance summary .section-title{margin:0; flex:1;}
+details.glance summary::after{
+  content:'+'; font-family:'IBM Plex Mono'; font-size:18px; font-weight:600;
+  color:var(--ink-soft); flex:0 0 auto;
+}
+details.glance[open] summary::after{content:'\2212';}
+details.glance .section-sub{margin-top:10px;}
+
 /* ---------- Tables shared ---------- */
 .table-wrap{
   background:var(--white); border:1px solid var(--paper-line); border-radius:var(--radius);
@@ -153,6 +165,26 @@ tbody tr:hover{background:#FBFAF6;}
   border:1px solid var(--paper-line);
 }
 .pill.wet{background:#EAF2E9; color:#3E6B4A; border-color:#CFE0CC;}
+
+/* ---------- Recent form (home) ---------- */
+.form-wrap{margin-bottom:32px;}
+.form-row{
+  display:flex; align-items:center; gap:12px; padding:10px 12px;
+  border-top:1px solid var(--paper-line);
+}
+.form-row:first-child{border-top:none;}
+.form-rank{font-family:'IBM Plex Mono'; font-weight:600; font-size:12px; color:var(--ink-soft); width:18px;}
+.form-team{font-weight:600; font-size:14px; flex:1;}
+.form-dots{display:flex; gap:5px;}
+.form-dot{
+  display:flex; align-items:center; justify-content:center;
+  width:22px; height:22px; border-radius:50%;
+  font-family:'IBM Plex Mono'; font-size:10.5px; font-weight:700;
+}
+.form-dot--w{background:var(--ball); color:var(--court-dark);}
+.form-dot--d{background:var(--paper-line); color:var(--ink-soft);}
+.form-dot--l{background:var(--clay); color:var(--white);}
+.form-dot--empty{background:var(--paper); color:var(--ink-soft); border:1px dashed var(--paper-line);}
 .pill.done{background:var(--ball); color:var(--court-dark); border-color:var(--ball-dark);}
 
 /* ---------- Fixtures ---------- */

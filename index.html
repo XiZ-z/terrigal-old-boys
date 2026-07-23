@@ -32,20 +32,26 @@
     </div>
   </div>
 
-  <div class="section-title">Season at a glance</div>
-  <p class="section-sub">Round robin runs Aug 5 – Nov 4, with two reserve weeks for wet weather before finals begin.</p>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Phase</th><th>Dates</th><th>Detail</th></tr></thead>
-      <tbody>
-        <tr><td>Round robin</td><td>5 Aug – 4 Nov</td><td>14 rounds, every team plays every other team twice</td></tr>
-        <tr><td>Wet weather reserve</td><td>11 &amp; 18 Nov</td><td>Only played if a round robin week is rained out</td></tr>
-        <tr><td>Elimination finals</td><td>25 Nov</td><td>1v6, 2v5, 3v4 — teams 7th &amp; 8th are dropped</td></tr>
-        <tr><td>Semi finals</td><td>2 Dec</td><td>Winners advance, best-placed loser gets a lifeline</td></tr>
-        <tr><td>Grand final</td><td>9 Dec</td><td>Winner takes the 2026 Season 2 title</td></tr>
-      </tbody>
-    </table>
-  </div>
+  <div class="section-title">Recent form</div>
+  <p class="section-sub" id="home-form-sub">Most recent on the right.</p>
+  <div class="table-wrap form-wrap" id="home-form"></div>
+
+  <details class="glance">
+    <summary><span class="section-title">Season at a glance</span></summary>
+    <p class="section-sub">Round robin runs Aug 5 – Nov 4, with two reserve weeks for wet weather before finals begin.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Phase</th><th>Dates</th><th>Detail</th></tr></thead>
+        <tbody>
+          <tr><td>Round robin</td><td>5 Aug – 4 Nov</td><td>14 rounds, every team plays every other team twice</td></tr>
+          <tr><td>Wet weather reserve</td><td>11 &amp; 18 Nov</td><td>Only played if a round robin week is rained out</td></tr>
+          <tr><td>Elimination finals</td><td>25 Nov</td><td>1v6, 2v5, 3v4 — teams 7th &amp; 8th are dropped</td></tr>
+          <tr><td>Semi finals</td><td>2 Dec</td><td>Winners advance, best-placed loser gets a lifeline</td></tr>
+          <tr><td>Grand final</td><td>9 Dec</td><td>Winner takes the 2026 Season 2 title</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
 </main>
 
 <div id="footer-placeholder"></div>
@@ -69,7 +75,28 @@
       `<div class="court-row"><span><span class="tag">CRT ${court}</span><span class="match">Team ${m[0]} v Team ${m[1]}</span></span></div>`
     ).join('');
   }
+  function renderHomeForm(){
+    const rows = computeLadder();
+    const dotLabel = { W:'W', D:'D', L:'L' };
+    const dotClass = { W:'form-dot--w', D:'form-dot--d', L:'form-dot--l' };
+    const maxWindow = 5;
+    const played = Math.min(maxWindow, Math.max(0, ...rows.map(r => r.form.length)));
+
+    const sub = document.getElementById('home-form-sub');
+    sub.textContent = played === 0
+      ? 'No results yet — check back after round 1.'
+      : `Last ${played} round${played === 1 ? '' : 's'} · most recent on the right.`;
+
+    document.getElementById('home-form').innerHTML = rows.map((r, i) => {
+      const recent = r.form.slice(-maxWindow);
+      const dots = recent.length
+        ? recent.map(o => `<span class="form-dot ${dotClass[o]}">${dotLabel[o]}</span>`).join('')
+        : `<span class="form-dot form-dot--empty">&ndash;</span>`;
+      return `<div class="form-row"><span class="form-rank">${i+1}</span><span class="form-team">Team ${r.team}</span><span class="form-dots">${dots}</span></div>`;
+    }).join('');
+  }
   renderHomeNext();
+  renderHomeForm();
 </script>
 <script src="nav.js"></script>
 </body>

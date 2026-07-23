@@ -94,7 +94,7 @@ function matchPoints(r){
 // (across the whole competition), then overall game differential.
 function computeLadder(){
   const teams = {};
-  for(let t=1;t<=8;t++){ teams[t] = { played:0, setsFor:0, setsAgainst:0, gamesFor:0, gamesAgainst:0, points:0 }; }
+  for(let t=1;t<=8;t++){ teams[t] = { played:0, setsFor:0, setsAgainst:0, gamesFor:0, gamesAgainst:0, points:0, form:[] }; }
 
   ALL_ROUNDS.forEach((pairs, idx) => {
     const roundNum = idx+1;
@@ -111,6 +111,9 @@ function computeLadder(){
       teams[b].gamesFor += r.gamesB; teams[b].gamesAgainst += r.gamesA;
       teams[a].points += bp.totalA;
       teams[b].points += bp.totalB;
+      const outcome = bp.totalA === bp.totalB ? 'D' : (bp.totalA > bp.totalB ? 'W' : 'L');
+      teams[a].form.push(outcome);
+      teams[b].form.push(outcome === 'D' ? 'D' : (outcome === 'W' ? 'L' : 'W'));
     });
   });
 

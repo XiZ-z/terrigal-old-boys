@@ -18,7 +18,7 @@
   <div class="table-wrap">
     <table>
       <thead>
-        <tr><th>#</th><th>Team</th><th class="num-col"><span class="played-label-full">Played</span><span class="played-label-short">P</span></th><th class="num-col">Sets<span class="th-sub">won&ndash;lost</span></th><th class="num-col">Games<span class="th-sub">won&ndash;lost</span></th><th class="num-col">Pts</th></tr>
+        <tr><th>#</th><th>Team</th><th class="num-col"><span class="played-label-full">Played</span><span class="played-label-short">P</span></th><th class="num-col">Record<span class="th-sub">W&ndash;D&ndash;L</span></th><th class="num-col">Sets<span class="th-sub">W&ndash;L</span></th><th class="num-col">Games<span class="th-sub">W&ndash;L</span></th><th class="num-col">Pts</th></tr>
       </thead>
       <tbody id="ladder-body"></tbody>
     </table>
@@ -37,6 +37,13 @@
       return `<span class="stat-loss">${forVal}</span>–<span class="stat-win">${againstVal}</span>`;
     }
     return `<span class="stat-even">${forVal}</span>–<span class="stat-even">${againstVal}</span>`;
+  }
+
+  function recordCell(form){
+    const w = form.filter(o => o === 'W').length;
+    const d = form.filter(o => o === 'D').length;
+    const l = form.filter(o => o === 'L').length;
+    return `${w}&ndash;${d}&ndash;${l}`;
   }
 
   function formatDiff(diff){
@@ -87,6 +94,7 @@
         <td class="rank-cell">${i+1}</td>
         <td><strong>Team ${r.team}</strong></td>
         <td class="mono-cell num-col">${r.played}</td>
+        <td class="mono-cell num-col">${recordCell(r.form)}</td>
         <td class="mono-cell num-col">${statCell(r.setsFor, r.setsAgainst)}<span class="diff-line">${formatDiff(r.setsFor - r.setsAgainst)}</span></td>
         <td class="mono-cell num-col">${statCell(r.gamesFor, r.gamesAgainst)}<span class="diff-line">${formatDiff(r.gamesFor - r.gamesAgainst)}</span></td>
         <td class="mono-cell num-col">${r.points}${tieNotes[i]}</td>
