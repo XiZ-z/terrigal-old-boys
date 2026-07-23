@@ -37,17 +37,17 @@ const RESULTS = {
   // Round 1 — Team 1 v Team 8, Team 2 v Team 7, Team 3 v Team 6, Team 4 v Team 5
   "1-0": { setsA: 4,   setsB: 2,   gamesA: 27, gamesB: 21 },
   "1-1": { setsA: 3.5, setsB: 2.5, gamesA: 25, gamesB: 23 },
-  "1-2": { setsA: 6,   setsB: 0,   gamesA: 24, gamesB: 24 },
+  "1-2": { setsA: 6,   setsB: 0,   gamesA: 30, gamesB: 18 },
   "1-3": { setsA: 2,   setsB: 4,   gamesA: 20, gamesB: 28 },
   // Round 2 — Team 1 v Team 7, Team 8 v Team 6, Team 2 v Team 5, Team 3 v Team 4
   "2-0": { setsA: 4.5, setsB: 1.5, gamesA: 28, gamesB: 20 },
   "2-1": { setsA: 2.5, setsB: 3.5, gamesA: 23, gamesB: 25 },
-  "2-2": { setsA: 3,   setsB: 3,   gamesA: 24, gamesB: 24 },
+  "2-2": { setsA: 3,   setsB: 3,   gamesA: 22, gamesB: 26 },
   "2-3": { setsA: 4,   setsB: 2,   gamesA: 26, gamesB: 22 },
   // Round 3 — Team 1 v Team 6, Team 7 v Team 5, Team 8 v Team 4, Team 2 v Team 3
   "3-0": { setsA: 5,   setsB: 1,   gamesA: 31, gamesB: 17 },
   "3-1": { setsA: 2,   setsB: 4,   gamesA: 19, gamesB: 29 },
-  "3-2": { setsA: 3.5, setsB: 2.5, gamesA: 24, gamesB: 24 },
+  "3-2": { setsA: 3.5, setsB: 2.5, gamesA: 21, gamesB: 27 },
   "3-3": { setsA: 1.5, setsB: 4.5, gamesA: 18, gamesB: 30 },
 };
 
