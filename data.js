@@ -28,11 +28,13 @@ const FINALS_DATES = {
 
 // ---------- Weekly results ----------
 // Add one line here per court per week, once that court's paper score sheet
-// has been scanned in and read back. Key is "roundNumber-pairingSlot" (0-3) --
-// see displayCourt() below for why this isn't simply "court number".
+// has been scanned in and read back. Key is "roundNumber-pairingSlot" (0-3)
+// -- see displayCourt() below for why this isn't simply "court number".
 // setsA/setsB: out of 6 total sets, can include .5 (a 4-4 set is a draw).
 // gamesA/gamesB: total games across all 6 sets, always sums to 48.
-const RESULTS = {};
+const RESULTS = {
+  // Cleared for the real season -- add real results here once played.
+};
 
 // ---------- Court display ----------
 // ALL_ROUNDS pairs are indexed by "pairing slot" (0-3), a byproduct of the
@@ -73,7 +75,8 @@ function matchPoints(r){
 }
 
 // ---------- Ladder ----------
-// Ranking: total points descending, then set differential (setsFor - setsAgainst).
+// Ranking: total points descending, then overall set differential
+// (across the whole competition), then overall game differential.
 function computeLadder(){
   const teams = {};
   for(let t=1;t<=8;t++){ teams[t] = { played:0, setsFor:0, setsAgainst:0, gamesFor:0, gamesAgainst:0, points:0 }; }
@@ -98,7 +101,9 @@ function computeLadder(){
 
   return Object.entries(teams)
     .map(([t,v]) => ({ team:t, ...v }))
-    .sort((x,y) => y.points - x.points || (y.setsFor-y.setsAgainst)-(x.setsFor-x.setsAgainst));
+    .sort((x,y) => y.points - x.points
+      || (y.setsFor-y.setsAgainst)-(x.setsFor-x.setsAgainst)
+      || (y.gamesFor-y.gamesAgainst)-(x.gamesFor-x.gamesAgainst));
 }
 
 // ---------- Next match night (first round with no results entered yet) ----------

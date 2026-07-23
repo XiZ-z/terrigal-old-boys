@@ -14,11 +14,11 @@
 
 <main>
   <div class="section-title">Ladder</div>
-  <p class="section-sub">Updated after each week's score sheets are entered. 1 pt per set, 0.5 for a drawn set, plus bonus points for most sets and most games.</p>
+  <p class="section-sub">Updated after each week's score sheets are entered. 1 pt per set, 0.5 for a drawn set, plus bonus points for most sets and most games. Ties are broken by overall set differential, then overall game differential if needed (shown below each score).</p>
   <div class="table-wrap">
     <table>
       <thead>
-        <tr><th>#</th><th>Team</th><th class="num-col">Played</th><th class="num-col">Sets<span class="th-sub">won&ndash;lost</span></th><th class="num-col">Games<span class="th-sub">won&ndash;lost</span></th><th class="num-col">Pts</th></tr>
+        <tr><th>#</th><th>Team</th><th class="num-col"><span class="played-label-full">Played</span><span class="played-label-short">P</span></th><th class="num-col">Sets<span class="th-sub">won&ndash;lost</span></th><th class="num-col">Games<span class="th-sub">won&ndash;lost</span></th><th class="num-col">Pts</th></tr>
       </thead>
       <tbody id="ladder-body"></tbody>
     </table>
@@ -39,17 +39,57 @@
     return `<span class="stat-even">${forVal}</span>–<span class="stat-even">${againstVal}</span>`;
   }
 
+  function formatDiff(diff){
+    if(diff > 0) return `+${diff}`;
+    if(diff < 0) return `${diff}`;
+    return '0';
+  }
+
+  function buildTieNotes(rows){
+    const notes = rows.map(() => '');
+    let i = 0;
+    while(i < rows.length){
+      let j = i;
+      while(j+1 < rows.length && rows[j+1].points === rows[i].points) j++;
+      const clusterSize = j - i + 1;
+      if(clusterSize === 2){
+        const setDiffI = rows[i].setsFor - rows[i].setsAgainst;
+        const setDiffJ = rows[j].setsFor - rows[j].setsAgainst;
+        if(setDiffI !== setDiffJ){
+          notes[i] = `<span class="tie-note stat-win">Ahead on set diff</span>`;
+          notes[j] = `<span class="tie-note stat-loss">Behind on set diff</span>`;
+        } else {
+          const gameDiffI = rows[i].gamesFor - rows[i].gamesAgainst;
+          const gameDiffJ = rows[j].gamesFor - rows[j].gamesAgainst;
+          if(gameDiffI !== gameDiffJ){
+            notes[i] = `<span class="tie-note stat-win">Ahead on game diff</span>`;
+            notes[j] = `<span class="tie-note stat-loss">Behind on game diff</span>`;
+          } else {
+            notes[i] = notes[j] = `<span class="tie-note">Fully tied — needs review</span>`;
+          }
+        }
+      } else if(clusterSize >= 3){
+        for(let k=i;k<=j;k++){
+          notes[k] = `<span class="tie-note">${clusterSize}-way tie — overall diff</span>`;
+        }
+      }
+      i = j+1;
+    }
+    return notes;
+  }
+
   function renderLadder(){
     const rows = computeLadder();
+    const tieNotes = buildTieNotes(rows);
     const body = document.getElementById('ladder-body');
     body.innerHTML = rows.map((r, i) => `
       <tr>
         <td class="rank-cell">${i+1}</td>
         <td><strong>Team ${r.team}</strong></td>
         <td class="mono-cell num-col">${r.played}</td>
-        <td class="mono-cell num-col">${statCell(r.setsFor, r.setsAgainst)}</td>
-        <td class="mono-cell num-col">${statCell(r.gamesFor, r.gamesAgainst)}</td>
-        <td class="mono-cell num-col">${r.points}</td>
+        <td class="mono-cell num-col">${statCell(r.setsFor, r.setsAgainst)}<span class="diff-line">${formatDiff(r.setsFor - r.setsAgainst)}</span></td>
+        <td class="mono-cell num-col">${statCell(r.gamesFor, r.gamesAgainst)}<span class="diff-line">${formatDiff(r.gamesFor - r.gamesAgainst)}</span></td>
+        <td class="mono-cell num-col">${r.points}${tieNotes[i]}</td>
       </tr>
     `).join('');
   }
