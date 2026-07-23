@@ -274,6 +274,10 @@ tbody tr:hover{background:#FBFAF6;}
   text-transform:none; color:var(--ball); opacity:0.85; margin-top:2px;
 }
 .num-col{text-align:center; white-space:nowrap;}
+.diff-line{
+  display:block; font-size:10px; font-weight:500; color:var(--ink-soft);
+  margin-top:2px; letter-spacing:0.02em;
+}
 .row-caption{
   font-size:10.5px; font-weight:500; color:var(--ink-soft);
   margin-top:2px; line-height:1.4;
