@@ -88,17 +88,16 @@
   const FINALS_CUTOFF = 6; // top 6 make the finals series (see rules.html)
 
   function cutNote(rows, i){
+    // When gap is 0, the two teams are tied on points and the tie-note
+    // (e.g. "Ahead on set diff") already explains the ranking — no need
+    // to also say "ahead/behind on countback", the rank number covers it.
     if(i === FINALS_CUTOFF - 1 && rows.length > FINALS_CUTOFF){
       const gap = rows[i].points - rows[FINALS_CUTOFF].points;
-      return gap > 0
-        ? `<span class="tie-note stat-win">${gap} clear of finals cut</span>`
-        : `<span class="tie-note stat-win">Ahead of 7th on countback</span>`;
+      return gap > 0 ? `<span class="tie-note stat-win">${gap} clear of finals cut</span>` : '';
     }
     if(i === FINALS_CUTOFF){
       const gap = rows[FINALS_CUTOFF - 1].points - rows[i].points;
-      return gap > 0
-        ? `<span class="tie-note stat-loss">${gap} off finals</span>`
-        : `<span class="tie-note stat-loss">Behind 6th on countback</span>`;
+      return gap > 0 ? `<span class="tie-note stat-loss">${gap} off finals</span>` : '';
     }
     return '';
   }
