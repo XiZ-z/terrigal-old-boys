@@ -340,6 +340,11 @@ body[data-page="ladder"] tbody td{vertical-align:top;}
 .bmatch .lbl{font-size:10.5px; text-transform:uppercase; letter-spacing:0.08em; color:var(--clay); font-weight:700; margin-bottom:4px;}
 .bmatch--final{border-color:var(--ball-dark); background:linear-gradient(180deg,#FFFDF4,var(--white));}
 .bmatch--final .lbl{color:var(--court);}
+.bmatch-result{display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-weight:600;}
+.bmatch-team--win{color:var(--court-dark);}
+.bmatch-team:not(.bmatch-team--win){color:var(--ink-soft); font-weight:500;}
+.bmatch-vs{font-size:10px; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft); font-weight:500;}
+.bmatch-score{font-family:'IBM Plex Mono'; font-size:11.5px; color:var(--ink-soft); margin-top:4px;}
 .bracket-wildcard{font-size:11.5px; color:var(--ink-soft); margin:10px 2px 0; font-style:italic;}
 .bracket-line{fill:none; stroke:var(--paper-line); stroke-width:2;}
 .bracket-line--final{stroke:var(--ball-dark);}

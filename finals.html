@@ -28,13 +28,13 @@
         </div>
         <div class="bracket-slots">
           <div class="bracket-slot" data-slot="game1">
-            <div class="bmatch"><div class="lbl">Game 1</div><span id="game1">1st v 6th</span></div>
+            <div class="bmatch"><div class="lbl">Game 1</div><div class="bmatch-body" id="game1"></div></div>
           </div>
           <div class="bracket-slot" data-slot="game2">
-            <div class="bmatch"><div class="lbl">Game 2</div><span id="game2">2nd v 5th</span></div>
+            <div class="bmatch"><div class="lbl">Game 2</div><div class="bmatch-body" id="game2"></div></div>
           </div>
           <div class="bracket-slot" data-slot="game3">
-            <div class="bmatch"><div class="lbl">Game 3</div><span id="game3">3rd v 4th</span></div>
+            <div class="bmatch"><div class="lbl">Game 3</div><div class="bmatch-body" id="game3"></div></div>
           </div>
         </div>
       </div>
@@ -46,12 +46,10 @@
         </div>
         <div class="bracket-slots">
           <div class="bracket-slot" data-slot="semi1">
-            <div class="bmatch"><div class="lbl">Semi 1</div>Winner G1 v Winner G3</div>
+            <div class="bmatch"><div class="lbl">Semi 1</div><div class="bmatch-body" id="semi1"></div></div>
           </div>
           <div class="bracket-slot" data-slot="semi2">
-            <div class="bmatch">
-              <div class="lbl">Semi 2</div>Winner G2 v Best-placed loser*
-            </div>
+            <div class="bmatch"><div class="lbl">Semi 2</div><div class="bmatch-body" id="semi2"></div></div>
           </div>
         </div>
       </div>
@@ -63,7 +61,7 @@
         </div>
         <div class="bracket-slots">
           <div class="bracket-slot" data-slot="final">
-            <div class="bmatch bmatch--final"><div class="lbl">Final</div>Winner Semi 1 v Winner Semi 2</div>
+            <div class="bmatch bmatch--final"><div class="lbl">Final</div><div class="bmatch-body" id="final"></div></div>
           </div>
         </div>
       </div>
@@ -83,32 +81,63 @@
     return `${n}th`;
   }
 
+  const SLOT_META = {
+    game1: { rank: [1, 6] },
+    game2: { rank: [2, 5] },
+    game3: { rank: [3, 4] },
+    semi1: { placeholder: 'Winner G1 v Winner G3' },
+    semi2: { placeholder: 'Winner G2 v Best-placed loser*' },
+    final: { placeholder: 'Winner Semi 1 v Winner Semi 2' },
+  };
+
+  // Renders one bracket box from its resolved state (see computeFinalsState
+  // in data.js): no state yet -> generic placeholder; teams known but not
+  // played -> "Team X v Team Y"; result entered -> winner highlighted with
+  // the score, reordered winner-first regardless of which side was A/B.
+  function renderSlot(slot, state){
+    const meta = SLOT_META[slot];
+    const s = state ? state[slot] : null;
+    const el = document.getElementById(slot);
+
+    if(!s){
+      el.innerHTML = meta.rank ? `${ordinal(meta.rank[0])} v ${ordinal(meta.rank[1])}` : meta.placeholder;
+      return;
+    }
+
+    if(!s.result){
+      const rankSuffix = meta.rank
+        ? ` <span class="bracket-rank">(${ordinal(meta.rank[0])} v ${ordinal(meta.rank[1])})</span>`
+        : '';
+      el.innerHTML = `Team ${s.teamA} v Team ${s.teamB}${rankSuffix}`;
+      return;
+    }
+
+    const r = s.result;
+    const winnerIsA = s.winner === s.teamA;
+    const loser = winnerIsA ? s.teamB : s.teamA;
+    const winSets = winnerIsA ? r.setsA : r.setsB, loseSets = winnerIsA ? r.setsB : r.setsA;
+    const winGames = winnerIsA ? r.gamesA : r.gamesB, loseGames = winnerIsA ? r.gamesB : r.gamesA;
+    el.innerHTML = `
+      <div class="bmatch-result">
+        <span class="bmatch-team bmatch-team--win">Team ${s.winner}</span>
+        <span class="bmatch-vs">def</span>
+        <span class="bmatch-team">Team ${loser}</span>
+      </div>
+      <div class="bmatch-score">${winSets}&ndash;${loseSets} sets &middot; ${winGames}&ndash;${loseGames} games</div>
+    `;
+  }
+
   function renderFinals(){
     const totalRounds = ALL_ROUNDS.length;
     const next = getNextRound();
     const roundsPlayed = next ? next.roundNum - 1 : totalRounds;
-    const rankLabel = (rankA, rankB) => `${ordinal(rankA)} v ${ordinal(rankB)}`;
 
-    if(roundsPlayed === 0){
-      document.getElementById('finals-note').textContent = 'Standings will appear here once Round 1 results are entered.';
-      document.getElementById('game1').textContent = rankLabel(1, 6);
-      document.getElementById('game2').textContent = rankLabel(2, 5);
-      document.getElementById('game3').textContent = rankLabel(3, 4);
-      return;
-    }
+    document.getElementById('finals-note').textContent = roundsPlayed === 0
+      ? 'Standings will appear here once Round 1 results are entered.'
+      : (next ? `Provisional — based on standings through Round ${roundsPlayed}.` : 'Final standings — round robin complete.');
 
-    document.getElementById('finals-note').textContent = next
-      ? `Provisional — based on standings through Round ${roundsPlayed}.`
-      : 'Final standings — round robin complete.';
-
-    const rows = computeLadder();
-    const matchLabel = (rankA, rankB) => {
-      const a = rows[rankA - 1], b = rows[rankB - 1];
-      return `Team ${a.team} v Team ${b.team} <span class="bracket-rank">(${rankLabel(rankA, rankB)})</span>`;
-    };
-    document.getElementById('game1').innerHTML = matchLabel(1, 6);
-    document.getElementById('game2').innerHTML = matchLabel(2, 5);
-    document.getElementById('game3').innerHTML = matchLabel(3, 4);
+    const state = roundsPlayed > 0 ? computeFinalsState() : null;
+    Object.keys(SLOT_META).forEach(slot => renderSlot(slot, state));
   }
 
   // Semi/Final columns have shorter headers than Elimination's (no note

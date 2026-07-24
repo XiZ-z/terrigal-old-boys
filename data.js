@@ -214,3 +214,73 @@ function getNextRound(){
   }
   return null; // round robin complete
 }
+
+// ---------- Finals ----------
+// Keyed by bracket slot ("game1"/"game2"/"game3"/"semi1"/"semi2"/"final"),
+// matching the ids used in finals.html. Same setsA/setsB/gamesA/gamesB
+// shape as RESULTS, plus an explicit `winner` ("A" or "B") read straight
+// off the sheet's Winner box -- needed because a match tied on both sets
+// and games after bonus points is settled by a tiebreaker set that isn't
+// otherwise captured in those four numbers (finals only).
+const FINALS_RESULTS = {
+  // Sample data for dev preview only -- pretends Games 1-3 and Semi 1 have
+  // been played, with Semi 2 resolved (teams known) but not yet played,
+  // and the Grand Final still awaiting Semi 2. Cleared before real finals.
+  game1: { setsA: 4,   setsB: 2,   gamesA: 27, gamesB: 21, winner: 'A' },
+  game2: { setsA: 2,   setsB: 4,   gamesA: 20, gamesB: 28, winner: 'B' },
+  game3: { setsA: 3.5, setsB: 2.5, gamesA: 25, gamesB: 23, winner: 'A' },
+  semi1: { setsA: 4.5, setsB: 1.5, gamesA: 28, gamesB: 20, winner: 'A' },
+};
+
+// Resolves each bracket slot's actual teams (from ladder seeding and prior
+// results) and, where a result has been entered, the winner/loser and
+// score. Returns null once a slot's feeders aren't decided yet -- e.g.
+// Semi 2 needs all three Elimination results in (to know every loser's
+// ladder rank for "best-placed loser"), and the Final needs both semis.
+function computeFinalsState(){
+  const rows = computeLadder();
+  const seedTeam = rank => Number(rows[rank - 1].team);
+  const rankOf = team => rows.findIndex(r => Number(r.team) === team) + 1;
+
+  const state = {
+    game1: { teamA: seedTeam(1), teamB: seedTeam(6) },
+    game2: { teamA: seedTeam(2), teamB: seedTeam(5) },
+    game3: { teamA: seedTeam(3), teamB: seedTeam(4) },
+  };
+
+  ['game1', 'game2', 'game3'].forEach(g => {
+    const r = FINALS_RESULTS[g];
+    if(!r) return;
+    state[g].result = r;
+    state[g].winner = r.winner === 'A' ? state[g].teamA : state[g].teamB;
+    state[g].loser = r.winner === 'A' ? state[g].teamB : state[g].teamA;
+  });
+
+  if(state.game1.winner && state.game3.winner){
+    state.semi1 = { teamA: state.game1.winner, teamB: state.game3.winner };
+  }
+  if(state.game1.winner && state.game2.winner && state.game3.winner){
+    const losers = [state.game1.loser, state.game2.loser, state.game3.loser];
+    const bestLoser = losers.reduce((best, t) => rankOf(t) < rankOf(best) ? t : best);
+    state.semi2 = { teamA: state.game2.winner, teamB: bestLoser };
+  }
+
+  ['semi1', 'semi2'].forEach(s => {
+    if(!state[s]) return;
+    const r = FINALS_RESULTS[s];
+    if(!r) return;
+    state[s].result = r;
+    state[s].winner = r.winner === 'A' ? state[s].teamA : state[s].teamB;
+  });
+
+  if(state.semi1 && state.semi1.winner && state.semi2 && state.semi2.winner){
+    state.final = { teamA: state.semi1.winner, teamB: state.semi2.winner };
+    const r = FINALS_RESULTS.final;
+    if(r){
+      state.final.result = r;
+      state.final.winner = r.winner === 'A' ? state.final.teamA : state.final.teamB;
+    }
+  }
+
+  return state;
+}
