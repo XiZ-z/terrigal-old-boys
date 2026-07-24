@@ -114,7 +114,7 @@ main{max-width:1080px; margin:0 auto; padding:32px 20px 80px;}
   transform:rotate(-1.1deg);
 }
 .scorecard::before{
-  content:'NEXT MATCH NIGHT';
+  content:attr(data-eyebrow);
   position:absolute; top:-11px; left:20px;
   background:var(--ball); color:var(--court-dark);
   font-size:10.5px; font-weight:700; letter-spacing:0.12em;
@@ -136,6 +136,25 @@ main{max-width:1080px; margin:0 auto; padding:32px 20px 80px;}
 .court-row .match{font-weight:600;}
 .court-row .match a{color:inherit; text-decoration:none;}
 .court-row .match a:hover{text-decoration:underline;}
+
+.scorecard[data-eyebrow="CHAMPION"]{
+  border-color:var(--ball-dark);
+  background:radial-gradient(120% 140% at 15% 0%, rgba(207,232,92,0.3), transparent 60%), var(--white);
+}
+.champion-row{display:flex; align-items:center; gap:16px; padding:14px 0 4px;}
+.champion-trophy{width:54px; height:54px; flex:0 0 auto;}
+.champion-text{display:flex; flex-direction:column; gap:7px;}
+.champion-pill{
+  display:inline-block; font-family:'Bebas Neue'; font-size:30px; letter-spacing:0.01em;
+  background:var(--ball); color:var(--court-dark);
+  padding:5px 16px; border-radius:9px; width:fit-content;
+}
+.champion-label{
+  font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em;
+  color:var(--ink-soft);
+}
+.champion-label a{color:inherit; text-decoration:none;}
+.champion-label a:hover{text-decoration:underline;}
 
 .section-title{
   font-family:'Bebas Neue'; font-size:26px; color:var(--court-dark);

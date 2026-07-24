@@ -29,7 +29,7 @@
         <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
       </div>
     </div>
-    <div class="scorecard">
+    <div class="scorecard" id="scorecard" data-eyebrow="NEXT MATCH NIGHT">
       <h3 id="next-round-title">Round 1</h3>
       <div class="date" id="next-round-date">Wednesday, 5 August 2026</div>
       <div id="home-next-matches"></div>
@@ -62,22 +62,78 @@
 
 <script src="data.js"></script>
 <script>
+  const FINALS_STAGE_META = {
+    elimination: { title: 'Elimination Finals', date: FINALS_DATES.elimination, slots: [['G1', 'game1'], ['G2', 'game2'], ['G3', 'game3']] },
+    semis:       { title: 'Semi Finals',        date: FINALS_DATES.semis,       slots: [['S1', 'semi1'], ['S2', 'semi2']] },
+    final:       { title: 'Grand Final',        date: FINALS_DATES.grandFinal,  slots: [['F', 'final']] },
+  };
+
   function renderHomeNext(){
+    const scorecard = document.getElementById('scorecard');
     const next = getNextRound();
-    if(!next){
-      document.getElementById('next-round-title').textContent = 'Round robin complete';
-      document.getElementById('next-round-date').textContent = 'See Finals for what\'s next';
-      document.getElementById('home-next-matches').innerHTML = '';
+    if(next){
+      scorecard.dataset.eyebrow = 'NEXT MATCH NIGHT';
+      document.getElementById('next-round-title').textContent = `Round ${next.roundNum}`;
+      document.getElementById('next-round-date').textContent = `Wednesday, ${next.date}`;
+      const courtsInOrder = next.pairs
+        .map((m, slotIdx) => ({ m, court: displayCourt(next.roundNum, slotIdx) }))
+        .sort((a, b) => a.court - b.court);
+      document.getElementById('home-next-matches').innerHTML = courtsInOrder.map(({m, court})=>
+        `<div class="court-row"><span><span class="tag">CRT ${court}</span><span class="match"><a href="fixtures.html?team=${m[0]}">Team ${m[0]}</a> v <a href="fixtures.html?team=${m[1]}">Team ${m[1]}</a></span></span></div>`
+      ).join('');
       return;
     }
-    document.getElementById('next-round-title').textContent = `Round ${next.roundNum}`;
-    document.getElementById('next-round-date').textContent = `Wednesday, ${next.date}`;
-    const courtsInOrder = next.pairs
-      .map((m, slotIdx) => ({ m, court: displayCourt(next.roundNum, slotIdx) }))
-      .sort((a, b) => a.court - b.court);
-    document.getElementById('home-next-matches').innerHTML = courtsInOrder.map(({m, court})=>
-      `<div class="court-row"><span><span class="tag">CRT ${court}</span><span class="match"><a href="fixtures.html?team=${m[0]}">Team ${m[0]}</a> v <a href="fixtures.html?team=${m[1]}">Team ${m[1]}</a></span></span></div>`
-    ).join('');
+    renderHomeFinals(scorecard);
+  }
+
+  // Once the round robin is complete, the scorecard switches to whichever
+  // finals stage is current -- driven entirely by computeFinalsState()
+  // (data.js), same source of truth as the Finals page bracket.
+  function renderHomeFinals(scorecard){
+    const state = computeFinalsState();
+    const elimDone = ['game1', 'game2', 'game3'].every(g => state[g].result);
+    const semiDone = elimDone && state.semi1 && state.semi1.result && state.semi2 && state.semi2.result;
+    const finalDone = semiDone && state.final && state.final.result;
+
+    if(finalDone){
+      renderHomeChampion(scorecard, state.final.winner);
+      return;
+    }
+
+    const stage = semiDone ? 'final' : (elimDone ? 'semis' : 'elimination');
+    const meta = FINALS_STAGE_META[stage];
+
+    scorecard.dataset.eyebrow = 'FINALS';
+    document.getElementById('next-round-title').textContent = meta.title;
+    document.getElementById('next-round-date').textContent = `Wednesday, ${meta.date}`;
+    document.getElementById('home-next-matches').innerHTML = meta.slots.map(([tag, slot]) => {
+      const s = state[slot];
+      const label = s ? `Team ${s.teamA} v Team ${s.teamB}` : 'To be decided';
+      return `<div class="court-row"><span><span class="tag">${tag}</span><span class="match"><a href="finals.html">${label}</a></span></span></div>`;
+    }).join('');
+  }
+
+  const TROPHY_SVG = `<svg class="champion-trophy" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <path d="M22 8h20v11a10 10 0 0 1-20 0V8z" fill="var(--ball)" stroke="var(--ball-dark)" stroke-width="2"/>
+    <path d="M22 12h-7a2 2 0 0 0-2 2v2a9 9 0 0 0 9 9" fill="none" stroke="var(--ball-dark)" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M42 12h7a2 2 0 0 1 2 2v2a9 9 0 0 1-9 9" fill="none" stroke="var(--ball-dark)" stroke-width="2.5" stroke-linecap="round"/>
+    <rect x="29" y="29" width="6" height="9" fill="var(--ball-dark)"/>
+    <rect x="21" y="38" width="22" height="5" rx="2" fill="var(--court-dark)"/>
+    <rect x="17" y="43" width="30" height="6" rx="2" fill="var(--court-dark)"/>
+  </svg>`;
+
+  function renderHomeChampion(scorecard, team){
+    scorecard.dataset.eyebrow = 'CHAMPION';
+    document.getElementById('next-round-title').textContent = 'Season complete';
+    document.getElementById('next-round-date').textContent = '2026 Season 2';
+    document.getElementById('home-next-matches').innerHTML = `
+      <div class="champion-row">
+        ${TROPHY_SVG}
+        <div class="champion-text">
+          <span class="champion-pill">Team ${team}</span>
+          <span class="champion-label"><a href="finals.html">2026 Season 2 Champions</a></span>
+        </div>
+      </div>`;
   }
   function renderHomeForm(){
     const rows = computeLadder();
