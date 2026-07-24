@@ -75,8 +75,41 @@ function matchPoints(r){
 }
 
 // ---------- Ladder ----------
+// Stats from just the matches between teamNum and opponentNum this season
+// (up to two meetings). Used only as a last-resort tiebreak, when two teams
+// are level on overall points, set diff, AND game diff -- follows the same
+// points -> set diff -> game diff cascade as the main ladder, just scoped
+// to their head-to-head matches only.
+function headToHeadStats(teamNum, opponentNum){
+  let points = 0, setsFor = 0, setsAgainst = 0, gamesFor = 0, gamesAgainst = 0;
+  ALL_ROUNDS.forEach((pairs, idx) => {
+    const roundNum = idx+1;
+    pairs.forEach((m, courtIdx) => {
+      const [a,b] = m;
+      const r = RESULTS[`${roundNum}-${courtIdx}`];
+      if(!r) return;
+      const bp = matchPoints(r);
+      if(a === teamNum && b === opponentNum){
+        points += bp.totalA; setsFor += r.setsA; setsAgainst += r.setsB;
+        gamesFor += r.gamesA; gamesAgainst += r.gamesB;
+      } else if(a === opponentNum && b === teamNum){
+        points += bp.totalB; setsFor += r.setsB; setsAgainst += r.setsA;
+        gamesFor += r.gamesB; gamesAgainst += r.gamesA;
+      }
+    });
+  });
+  return { points, setDiff: setsFor - setsAgainst, gameDiff: gamesFor - gamesAgainst };
+}
+function headToHeadCompare(teamNum, opponentNum){
+  const mine = headToHeadStats(teamNum, opponentNum);
+  const theirs = headToHeadStats(opponentNum, teamNum);
+  return (mine.points - theirs.points) || (mine.setDiff - theirs.setDiff) || (mine.gameDiff - theirs.gameDiff);
+}
+
 // Ranking: total points descending, then overall set differential
-// (across the whole competition), then overall game differential.
+// (across the whole competition), then overall game differential,
+// then head-to-head points -> sets -> games (only relevant once a pair is
+// level on all three overall stats).
 function computeLadder(){
   const teams = {};
   for(let t=1;t<=8;t++){ teams[t] = { played:0, setsFor:0, setsAgainst:0, gamesFor:0, gamesAgainst:0, points:0, form:[] }; }
@@ -106,7 +139,8 @@ function computeLadder(){
     .map(([t,v]) => ({ team:t, ...v }))
     .sort((x,y) => y.points - x.points
       || (y.setsFor-y.setsAgainst)-(x.setsFor-x.setsAgainst)
-      || (y.gamesFor-y.gamesAgainst)-(x.gamesFor-x.gamesAgainst));
+      || (y.gamesFor-y.gamesAgainst)-(x.gamesFor-x.gamesAgainst)
+      || headToHeadCompare(Number(y.team), Number(x.team)));
 }
 
 // ---------- Season records (biggest wins, closest match, longest streaks) ----------
