@@ -55,7 +55,7 @@
         const key = `${roundNum}-${slotIdx}`;
         const r = RESULTS[key];
         if(!r){
-          html += `<tr><td class="mono-cell crt-cell">CRT ${court}</td><td class="match-cell">Team ${m[0]} v Team ${m[1]}</td><td colspan="3" class="num-col"><span class="pill">Upcoming</span></td></tr>`;
+          html += `<tr><td class="mono-cell">CRT ${court}</td><td>Team ${m[0]} v Team ${m[1]}</td><td colspan="3" class="num-col"><span class="pill">Upcoming</span></td></tr>`;
           return;
         }
         const bp = matchPoints(r);
@@ -74,11 +74,11 @@
           bonusHtml = `${setsTxt} ${gamesTxt}`;
         }
         html += `<tr>
-          <td class="mono-cell crt-cell">CRT ${court}</td>
-          <td class="match-cell">Team ${m[0]} v Team ${m[1]}</td>
-          <td class="mono-cell num-col" data-label="Sets">${r.setsA}&ndash;${r.setsB}</td>
-          <td class="mono-cell num-col" data-label="Games">${r.gamesA}&ndash;${r.gamesB}</td>
-          <td class="mono-cell num-col" data-label="Points"><strong>${bp.totalA}&ndash;${bp.totalB}</strong></td>
+          <td class="mono-cell">CRT ${court}</td>
+          <td>Team ${m[0]} v Team ${m[1]}</td>
+          <td class="mono-cell num-col">${r.setsA}&ndash;${r.setsB}</td>
+          <td class="mono-cell num-col">${r.gamesA}&ndash;${r.gamesB}</td>
+          <td class="mono-cell num-col"><strong>${bp.totalA}&ndash;${bp.totalB}</strong></td>
         </tr>
         <tr class="note-row"><td colspan="5">${bonusHtml}</td></tr>`;
       });
@@ -95,8 +95,8 @@
   document.getElementById('team-filter').addEventListener('change', (e) => {
     renderFixtures(e.target.value ? Number(e.target.value) : null);
   });
-  const queryTeam = new URLSearchParams(location.search).get('team');
-  const initialTeam = queryTeam ? Number(queryTeam) : null;
+  const queryTeam = Number(new URLSearchParams(location.search).get('team'));
+  const initialTeam = (queryTeam >= 1 && queryTeam <= 8) ? queryTeam : null;
   if(initialTeam) document.getElementById('team-filter').value = String(initialTeam);
   renderFixtures(initialTeam);
 </script>

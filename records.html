@@ -57,21 +57,37 @@
 
     const cards = [];
 
-    const bw = winnerLoser(rec.biggestWin);
-    cards.push(recordCard({
-      team: `Team ${bw.winner}`,
-      label: 'Biggest win margin',
-      value: `${rec.biggestWin.gameDiff} games`,
-      detail: `beat Team ${bw.loser} ${bw.winnerGames}&ndash;${bw.loserGames} in Round ${rec.biggestWin.roundNum}`,
-    }));
+    if(rec.biggestWin.gameDiff === 0){
+      cards.push(recordCard({
+        label: 'Biggest win margin',
+        value: `Dead even`,
+        detail: `Every match this season has been perfectly even on games`,
+      }));
+    } else {
+      const bw = winnerLoser(rec.biggestWin);
+      cards.push(recordCard({
+        team: `Team ${bw.winner}`,
+        label: 'Biggest win margin',
+        value: `${rec.biggestWin.gameDiff} games`,
+        detail: `beat Team ${bw.loser} ${bw.winnerGames}&ndash;${bw.loserGames} in Round ${rec.biggestWin.roundNum}`,
+      }));
+    }
 
-    const ms = winnerLoser(rec.mostLopsidedSets, false);
-    cards.push(recordCard({
-      team: `Team ${ms.winner}`,
-      label: 'Most lopsided sets',
-      value: `${rec.mostLopsidedSets.setsA}&ndash;${rec.mostLopsidedSets.setsB}`,
-      detail: `over Team ${ms.loser} in Round ${rec.mostLopsidedSets.roundNum}`,
-    }));
+    if(rec.mostLopsidedSets.setDiff === 0){
+      cards.push(recordCard({
+        label: 'Most lopsided sets',
+        value: `Dead even`,
+        detail: `Every match this season has been perfectly even on sets`,
+      }));
+    } else {
+      const ms = winnerLoser(rec.mostLopsidedSets, false);
+      cards.push(recordCard({
+        team: `Team ${ms.winner}`,
+        label: 'Most lopsided sets',
+        value: `${rec.mostLopsidedSets.setsA}&ndash;${rec.mostLopsidedSets.setsB}`,
+        detail: `over Team ${ms.loser} in Round ${rec.mostLopsidedSets.roundNum}`,
+      }));
+    }
 
     const cl = rec.closest;
     if(cl.gameDiff === 0){
