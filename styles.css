@@ -280,6 +280,17 @@ body[data-page="ladder"] tbody td{vertical-align:top;}
 .records-grid{
   display:grid; grid-template-columns:repeat(auto-fill, minmax(220px,1fr)); gap:16px;
 }
+.record-team{
+  display:inline-block; font-family:'Bebas Neue'; font-size:19px; letter-spacing:0.01em;
+  background:var(--ball); color:var(--court-dark);
+  padding:3px 12px; border-radius:7px; margin-bottom:8px;
+}
+.record-team.record-team--loss{background:var(--clay); color:var(--white);}
+.record-card h4{
+  font-family:'IBM Plex Sans'; font-size:12px; font-weight:600;
+  text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft);
+  margin:0 0 6px;
+}
 .record-card .record-value{
   font-family:'IBM Plex Mono', monospace; font-size:28px; font-weight:700;
   color:var(--court); margin:2px 0 6px;

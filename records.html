@@ -22,10 +22,28 @@
 
 <script src="data.js"></script>
 <script>
-  function winnerLoser(m){
-    return m.gamesA > m.gamesB
+  // byGames=false compares on sets instead of games -- "most lopsided sets"
+  // needs the sets winner, not whoever happened to win more games that night.
+  function winnerLoser(m, byGames){
+    const useGames = byGames !== false;
+    const aVal = useGames ? m.gamesA : m.setsA;
+    const bVal = useGames ? m.gamesB : m.setsB;
+    return aVal > bVal
       ? { winner: m.teamA, loser: m.teamB, winnerGames: m.gamesA, loserGames: m.gamesB }
       : { winner: m.teamB, loser: m.teamA, winnerGames: m.gamesB, loserGames: m.gamesA };
+  }
+
+  function recordCard({ team, teamClass, label, value, detail }){
+    const badge = team
+      ? `<div class="record-team${teamClass ? ' ' + teamClass : ''}">${team}</div>`
+      : '';
+    return `
+      <div class="rule-card record-card">
+        ${badge}
+        <h4>${label}</h4>
+        <div class="record-value">${value}</div>
+        <div class="record-detail">${detail}</div>
+      </div>`;
   }
 
   function renderRecords(){
@@ -40,48 +58,56 @@
     const cards = [];
 
     const bw = winnerLoser(rec.biggestWin);
-    cards.push(`
-      <div class="rule-card record-card">
-        <h4>Biggest win margin</h4>
-        <div class="record-value">${rec.biggestWin.gameDiff} games</div>
-        <div class="record-detail">Team ${bw.winner} beat Team ${bw.loser} ${bw.winnerGames}&ndash;${bw.loserGames} in Round ${rec.biggestWin.roundNum}</div>
-      </div>`);
+    cards.push(recordCard({
+      team: `Team ${bw.winner}`,
+      label: 'Biggest win margin',
+      value: `${rec.biggestWin.gameDiff} games`,
+      detail: `beat Team ${bw.loser} ${bw.winnerGames}&ndash;${bw.loserGames} in Round ${rec.biggestWin.roundNum}`,
+    }));
 
-    const ms = winnerLoser(rec.mostLopsidedSets);
-    cards.push(`
-      <div class="rule-card record-card">
-        <h4>Most lopsided sets</h4>
-        <div class="record-value">${rec.mostLopsidedSets.setsA}&ndash;${rec.mostLopsidedSets.setsB}</div>
-        <div class="record-detail">Team ${ms.winner} over Team ${ms.loser} in Round ${rec.mostLopsidedSets.roundNum}</div>
-      </div>`);
+    const ms = winnerLoser(rec.mostLopsidedSets, false);
+    cards.push(recordCard({
+      team: `Team ${ms.winner}`,
+      label: 'Most lopsided sets',
+      value: `${rec.mostLopsidedSets.setsA}&ndash;${rec.mostLopsidedSets.setsB}`,
+      detail: `over Team ${ms.loser} in Round ${rec.mostLopsidedSets.roundNum}`,
+    }));
 
     const cl = rec.closest;
-    const closestDetail = cl.gameDiff === 0
-      ? `Team ${cl.teamA} drew Team ${cl.teamB} ${cl.gamesA}&ndash;${cl.gamesB} on games in Round ${cl.roundNum}`
-      : `Team ${cl.teamA} ${cl.gamesA}&ndash;${cl.gamesB} Team ${cl.teamB} in Round ${cl.roundNum}`;
-    cards.push(`
-      <div class="rule-card record-card">
-        <h4>Closest match</h4>
-        <div class="record-value">${cl.gameDiff} game${cl.gameDiff === 1 ? '' : 's'}</div>
-        <div class="record-detail">${closestDetail}</div>
-      </div>`);
+    if(cl.gameDiff === 0){
+      cards.push(recordCard({
+        team: `Team ${cl.teamA} &amp; Team ${cl.teamB}`,
+        label: 'Closest match',
+        value: `Drew on games`,
+        detail: `${cl.gamesA}&ndash;${cl.gamesB} in Round ${cl.roundNum}`,
+      }));
+    } else {
+      const cw = winnerLoser(cl);
+      cards.push(recordCard({
+        team: `Team ${cw.winner}`,
+        label: 'Closest match',
+        value: `${cl.gameDiff} game${cl.gameDiff === 1 ? '' : 's'}`,
+        detail: `beat Team ${cw.loser} ${cw.winnerGames}&ndash;${cw.loserGames} in Round ${cl.roundNum}`,
+      }));
+    }
 
     if(rec.bestWinStreak){
-      cards.push(`
-        <div class="rule-card record-card">
-          <h4>Longest win streak</h4>
-          <div class="record-value">${rec.bestWinStreak.streak} match${rec.bestWinStreak.streak === 1 ? '' : 'es'}</div>
-          <div class="record-detail">Team ${rec.bestWinStreak.team}</div>
-        </div>`);
+      cards.push(recordCard({
+        team: `Team ${rec.bestWinStreak.team}`,
+        label: 'Longest win streak',
+        value: `${rec.bestWinStreak.streak} match${rec.bestWinStreak.streak === 1 ? '' : 'es'}`,
+        detail: `and counting`,
+      }));
     }
 
     if(rec.bestLossStreak){
-      cards.push(`
-        <div class="rule-card record-card">
-          <h4>Longest losing streak</h4>
-          <div class="record-value">${rec.bestLossStreak.streak} match${rec.bestLossStreak.streak === 1 ? '' : 'es'}</div>
-          <div class="record-detail">Team ${rec.bestLossStreak.team}</div>
-        </div>`);
+      cards.push(recordCard({
+        team: `Team ${rec.bestLossStreak.team}`,
+        teamClass: 'record-team--loss',
+        label: 'Longest losing streak',
+        value: `${rec.bestLossStreak.streak} match${rec.bestLossStreak.streak === 1 ? '' : 'es'}`,
+        detail: `due a win`,
+      }));
     }
 
     grid.innerHTML = cards.join('');
