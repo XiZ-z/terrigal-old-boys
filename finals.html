@@ -119,9 +119,9 @@
     const winGames = winnerIsA ? r.gamesA : r.gamesB, loseGames = winnerIsA ? r.gamesB : r.gamesA;
     el.innerHTML = `
       <div class="bmatch-result">
-        <span class="bmatch-team bmatch-team--win">Team ${s.winner}</span>
+        <span class="bmatch-winner">Team ${s.winner}</span>
         <span class="bmatch-vs">def</span>
-        <span class="bmatch-team">Team ${loser}</span>
+        <span class="bmatch-loser">Team ${loser}</span>
       </div>
       <div class="bmatch-score">${winSets}&ndash;${loseSets} sets &middot; ${winGames}&ndash;${loseGames} games</div>
     `;
