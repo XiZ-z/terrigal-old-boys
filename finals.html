@@ -15,30 +15,61 @@
 <main>
   <div class="section-title">Finals series</div>
   <p class="section-sub">Top six from the round robin qualify. Teams placed 7th and 8th are dropped.</p>
-  <div class="bracket">
-    <div class="bracket-stage">
-      <h4>Elimination round <span class="bracket-date">Wed 25 Nov</span></h4>
-      <p class="bracket-note" id="finals-note"></p>
-      <div class="bracket-matches">
-        <div class="bmatch"><div class="lbl">Game 1</div><span id="game1">1st v 6th</span></div>
-        <div class="bmatch"><div class="lbl">Game 2</div><span id="game2">2nd v 5th</span></div>
-        <div class="bmatch"><div class="lbl">Game 3</div><span id="game3">3rd v 4th</span></div>
+
+  <div class="bracket-scroll">
+    <div class="bracket" id="bracket">
+      <svg class="bracket-lines" id="bracket-lines"></svg>
+
+      <div class="bracket-round">
+        <div class="bracket-head">
+          <h4>Elimination</h4>
+          <span class="bracket-date">Wed 25 Nov</span>
+          <p class="bracket-note" id="finals-note"></p>
+        </div>
+        <div class="bracket-slots">
+          <div class="bracket-slot" data-slot="game1">
+            <div class="bmatch"><div class="lbl">Game 1</div><span id="game1">1st v 6th</span></div>
+          </div>
+          <div class="bracket-slot" data-slot="game2">
+            <div class="bmatch"><div class="lbl">Game 2</div><span id="game2">2nd v 5th</span></div>
+          </div>
+          <div class="bracket-slot" data-slot="game3">
+            <div class="bmatch"><div class="lbl">Game 3</div><span id="game3">3rd v 4th</span></div>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="bracket-stage">
-      <h4>Semi finals <span class="bracket-date">Wed 2 Dec</span></h4>
-      <div class="bracket-matches">
-        <div class="bmatch"><div class="lbl">Semi 1</div>Winner G1 v Winner G3</div>
-        <div class="bmatch"><div class="lbl">Semi 2</div>Winner G2 v Best-placed loser</div>
+
+      <div class="bracket-round">
+        <div class="bracket-head">
+          <h4>Semi finals</h4>
+          <span class="bracket-date">Wed 2 Dec</span>
+        </div>
+        <div class="bracket-slots">
+          <div class="bracket-slot" data-slot="semi1">
+            <div class="bmatch"><div class="lbl">Semi 1</div>Winner G1 v Winner G3</div>
+          </div>
+          <div class="bracket-slot" data-slot="semi2">
+            <div class="bmatch">
+              <div class="lbl">Semi 2</div>Winner G2 v Best-placed loser*
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="bracket-stage">
-      <h4>Grand final <span class="bracket-date">Wed 9 Dec</span></h4>
-      <div class="bracket-matches">
-        <div class="bmatch"><div class="lbl">Final</div>Winner Semi 1 v Winner Semi 2</div>
+
+      <div class="bracket-round">
+        <div class="bracket-head">
+          <h4>Grand final</h4>
+          <span class="bracket-date">Wed 9 Dec</span>
+        </div>
+        <div class="bracket-slots">
+          <div class="bracket-slot" data-slot="final">
+            <div class="bmatch bmatch--final"><div class="lbl">Final</div>Winner Semi 1 v Winner Semi 2</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
+  <p class="bracket-wildcard">* Best-placed loser: whichever of the three Elimination losers finished highest on the round-robin ladder — not tied to a specific game.</p>
 </main>
 
 <div id="footer-placeholder"></div>
@@ -79,7 +110,48 @@
     document.getElementById('game2').innerHTML = matchLabel(2, 5);
     document.getElementById('game3').innerHTML = matchLabel(3, 4);
   }
+
+  // Draws curved connector lines between bracket slots. Only deterministic
+  // advancement paths get a line -- Semi 2's "best-placed loser" slot isn't
+  // tied to a specific elimination game, so it's called out with a footnote
+  // instead of a line that would misrepresent which game it comes from.
+  function drawBracketLines(){
+    const svg = document.getElementById('bracket-lines');
+    const bracket = document.getElementById('bracket');
+    const rect = bracket.getBoundingClientRect();
+    svg.setAttribute('width', bracket.scrollWidth);
+    svg.setAttribute('height', bracket.scrollHeight);
+    svg.innerHTML = '';
+
+    function anchor(slotName, side){
+      const box = bracket.querySelector(`[data-slot="${slotName}"] .bmatch`);
+      const r = box.getBoundingClientRect();
+      return {
+        x: (side === 'right' ? r.right : r.left) - rect.left,
+        y: r.top - rect.top + r.height / 2,
+      };
+    }
+
+    function connect(fromSlot, toSlot, extraClass){
+      const p1 = anchor(fromSlot, 'right');
+      const p2 = anchor(toSlot, 'left');
+      const midX = (p1.x + p2.x) / 2;
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', `M ${p1.x} ${p1.y} C ${midX} ${p1.y}, ${midX} ${p2.y}, ${p2.x} ${p2.y}`);
+      path.setAttribute('class', `bracket-line${extraClass ? ' ' + extraClass : ''}`);
+      svg.appendChild(path);
+    }
+
+    connect('game1', 'semi1');
+    connect('game3', 'semi1');
+    connect('game2', 'semi2');
+    connect('semi1', 'final', 'bracket-line--final');
+    connect('semi2', 'final', 'bracket-line--final');
+  }
+
   renderFinals();
+  drawBracketLines();
+  window.addEventListener('resize', drawBracketLines);
 </script>
 <script src="nav.js"></script>
 </body>
