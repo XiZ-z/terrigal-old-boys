@@ -86,14 +86,21 @@
     renderHomeFinals(scorecard);
   }
 
+  // Shared by the scorecard and the progress bar so both agree on which
+  // finals stage is current.
+  function getFinalsProgress(state){
+    const elimDone = ['game1', 'game2', 'game3'].every(g => state[g].result);
+    const semiDone = elimDone && state.semi1 && state.semi1.result && state.semi2 && state.semi2.result;
+    const finalDone = semiDone && state.final && state.final.result;
+    return { elimDone, semiDone, finalDone };
+  }
+
   // Once the round robin is complete, the scorecard switches to whichever
   // finals stage is current -- driven entirely by computeFinalsState()
   // (data.js), same source of truth as the Finals page bracket.
   function renderHomeFinals(scorecard){
     const state = computeFinalsState();
-    const elimDone = ['game1', 'game2', 'game3'].every(g => state[g].result);
-    const semiDone = elimDone && state.semi1 && state.semi1.result && state.semi2 && state.semi2.result;
-    const finalDone = semiDone && state.final && state.final.result;
+    const { elimDone, semiDone, finalDone } = getFinalsProgress(state);
 
     if(finalDone){
       renderHomeChampion(scorecard, state.final.winner);
@@ -155,13 +162,30 @@
       return `<div class="form-row"><span class="form-rank">${i+1}</span><span class="form-team"><a href="fixtures.html?team=${r.team}">Team ${r.team}</a></span><span class="form-dots">${dots}</span></div>`;
     }).join('');
   }
+  // Covers the whole season arc, not just the round robin -- once the 14
+  // rounds are done, three more steps (Elimination/Semis/Grand Final) keep
+  // the bar moving instead of it sitting stuck at 100% for ~6 weeks of
+  // finals.
   function renderSeasonProgress(){
     const totalRounds = ALL_ROUNDS.length;
+    const finalsSteps = 3;
+    const totalSteps = totalRounds + finalsSteps;
     const next = getNextRound();
-    const roundsPlayed = next ? next.roundNum - 1 : totalRounds;
-    const pct = Math.round((roundsPlayed / totalRounds) * 100);
-    document.getElementById('progress-fill').style.width = `${pct}%`;
-    document.getElementById('progress-text').textContent = `${roundsPlayed} of ${totalRounds} rounds played`;
+
+    if(next){
+      const roundsPlayed = next.roundNum - 1;
+      document.getElementById('progress-fill').style.width = `${Math.round((roundsPlayed / totalSteps) * 100)}%`;
+      document.getElementById('progress-text').textContent = `${roundsPlayed} of ${totalRounds} rounds played`;
+      return;
+    }
+
+    const { elimDone, semiDone, finalDone } = getFinalsProgress(computeFinalsState());
+    const finalsStepsDone = finalDone ? 3 : (semiDone ? 2 : (elimDone ? 1 : 0));
+    document.getElementById('progress-fill').style.width = `${Math.round(((totalRounds + finalsStepsDone) / totalSteps) * 100)}%`;
+    document.getElementById('progress-text').textContent = finalDone ? 'Season complete'
+      : semiDone ? 'Grand Final underway'
+      : elimDone ? 'Semi Finals underway'
+      : 'Elimination Finals underway';
   }
   renderHomeNext();
   renderHomeForm();

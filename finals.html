@@ -16,6 +16,8 @@
   <div class="section-title">Finals series</div>
   <p class="section-sub">Top six from the round robin qualify. Teams placed 7th and 8th are dropped.</p>
 
+  <div class="champion-banner" id="champion-banner"></div>
+
   <div class="bracket-scroll">
     <div class="bracket" id="bracket">
       <svg class="bracket-lines" id="bracket-lines"></svg>
@@ -127,6 +129,32 @@
     `;
   }
 
+  const TROPHY_SVG = `<svg class="champion-trophy" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <path d="M22 8h20v11a10 10 0 0 1-20 0V8z" fill="var(--ball)" stroke="var(--ball-dark)" stroke-width="2"/>
+    <path d="M22 12h-7a2 2 0 0 0-2 2v2a9 9 0 0 0 9 9" fill="none" stroke="var(--ball-dark)" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M42 12h7a2 2 0 0 1 2 2v2a9 9 0 0 1-9 9" fill="none" stroke="var(--ball-dark)" stroke-width="2.5" stroke-linecap="round"/>
+    <rect x="29" y="29" width="6" height="9" fill="var(--ball-dark)"/>
+    <rect x="21" y="38" width="22" height="5" rx="2" fill="var(--court-dark)"/>
+    <rect x="17" y="43" width="30" height="6" rx="2" fill="var(--court-dark)"/>
+  </svg>`;
+
+  function renderChampionBanner(state){
+    const banner = document.getElementById('champion-banner');
+    const finalDone = state && state.final && state.final.result;
+    if(!finalDone){
+      banner.classList.remove('show');
+      banner.innerHTML = '';
+      return;
+    }
+    banner.classList.add('show');
+    banner.innerHTML = `
+      ${TROPHY_SVG}
+      <div class="champion-text">
+        <span class="champion-pill">Team ${state.final.winner}</span>
+        <span class="champion-label">2026 Season 2 Champions</span>
+      </div>`;
+  }
+
   function renderFinals(){
     const totalRounds = ALL_ROUNDS.length;
     const next = getNextRound();
@@ -138,6 +166,7 @@
 
     const state = roundsPlayed > 0 ? computeFinalsState() : null;
     Object.keys(SLOT_META).forEach(slot => renderSlot(slot, state));
+    renderChampionBanner(state);
   }
 
   // Semi/Final columns have shorter headers than Elimination's (no note
