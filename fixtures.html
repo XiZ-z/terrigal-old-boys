@@ -36,6 +36,58 @@
 
 <script src="data.js"></script>
 <script>
+  // One match row: a result if RESULTS has it, otherwise a status pill --
+  // WET while that round is still marked postponed, plain Upcoming
+  // otherwise. roundNum drives the RESULTS/bonus lookup; it's the real
+  // round number even when the row is rendered under a reserve-week slot.
+  function renderMatchRow(roundNum, m, slotIdx, court, wet){
+    const key = `${roundNum}-${slotIdx}`;
+    const r = RESULTS[key];
+    if(!r){
+      const statusPill = wet ? `<span class="pill wet">WET</span>` : `<span class="pill">Upcoming</span>`;
+      return `<tr><td class="mono-cell">CRT ${court}</td><td>Team ${m[0]} v Team ${m[1]}</td><td colspan="3" class="num-col">${statusPill}</td></tr>`;
+    }
+    const bp = matchPoints(r);
+    const setsWinner = bp.setsBonusA === 1 ? null : (bp.setsBonusA ? m[0] : m[1]);
+    const gamesWinner = bp.gamesBonusA === 1 ? null : (bp.gamesBonusA ? m[0] : m[1]);
+    let bonusHtml;
+    if(setsWinner !== null && setsWinner === gamesWinner){
+      bonusHtml = `<span class="pill done">+2 sets &amp; games bonus &rarr; Team ${setsWinner}</span>`;
+    } else {
+      const setsTxt = setsWinner === null
+        ? `<span class="pill">Sets tied · +1 each</span>`
+        : `<span class="pill done">+2 sets &rarr; Team ${setsWinner}</span>`;
+      const gamesTxt = gamesWinner === null
+        ? `<span class="pill">Games tied · +1 each</span>`
+        : `<span class="pill done">+2 games &rarr; Team ${gamesWinner}</span>`;
+      bonusHtml = `${setsTxt} ${gamesTxt}`;
+    }
+    return `<tr>
+      <td class="mono-cell">CRT ${court}</td>
+      <td>Team ${m[0]} v Team ${m[1]}</td>
+      <td class="mono-cell num-col">${r.setsA}&ndash;${r.setsB}</td>
+      <td class="mono-cell num-col">${r.gamesA}&ndash;${r.gamesB}</td>
+      <td class="mono-cell num-col"><strong>${bp.totalA}&ndash;${bp.totalB}</strong></td>
+    </tr>
+    <tr class="note-row"><td colspan="5">${bonusHtml}</td></tr>`;
+  }
+
+  // label is what's shown as "RD n" -- normally same as roundNum, except
+  // a reserve-week slot hosting a wet round's replay shows RD 15/16 while
+  // roundNum stays the real round number driving the match/results lookup.
+  function renderRoundBlock({ label, roundNum, pairs, dateLabel, headTags, extraClass, teamFilter, wet }){
+    const courtsInOrder = pairs
+      .map((m, slotIdx) => ({ m, slotIdx, court: displayCourt(roundNum, slotIdx) }))
+      .filter(({ m }) => !teamFilter || m[0] === teamFilter || m[1] === teamFilter)
+      .sort((a, b) => a.court - b.court);
+    if(teamFilter && courtsInOrder.length === 0) return '';
+    let html = `<div class="round-block${extraClass || ''}"><div class="round-head"><span class="round-num">RD ${label}</span><span class="round-date">${dateLabel}</span>${headTags || ''}</div>`;
+    html += `<div class="table-wrap"><table><thead><tr><th class="crt-col">Crt</th><th>Match</th><th class="num-col">Sets</th><th class="num-col">Games</th><th class="num-col">Points</th></tr></thead><tbody>`;
+    courtsInOrder.forEach(({ m, slotIdx, court }) => { html += renderMatchRow(roundNum, m, slotIdx, court, wet); });
+    html += `</tbody></table></div></div>`;
+    return html;
+  }
+
   function renderFixtures(teamFilter){
     const el = document.getElementById('fixtures-list');
     const next = getNextRound();
@@ -44,48 +96,27 @@
       const roundNum = idx+1;
       const isNext = next && next.roundNum === roundNum;
       const nextTag = isNext ? `<span class="pill next-tag">Next</span>` : '';
-      const courtsInOrder = pairs
-        .map((m, slotIdx) => ({ m, slotIdx, court: displayCourt(roundNum, slotIdx) }))
-        .filter(({ m }) => !teamFilter || m[0] === teamFilter || m[1] === teamFilter)
-        .sort((a, b) => a.court - b.court);
-      if(teamFilter && courtsInOrder.length === 0) return;
-      html += `<div class="round-block${isNext ? ' round-block--next' : ''}"><div class="round-head"><span class="round-num">RD ${roundNum}</span><span class="round-date">${DATES[idx]}</span>${nextTag}</div>`;
-      html += `<div class="table-wrap"><table><thead><tr><th class="crt-col">Crt</th><th>Match</th><th class="num-col">Sets</th><th class="num-col">Games</th><th class="num-col">Points</th></tr></thead><tbody>`;
-      courtsInOrder.forEach(({ m, slotIdx, court }) => {
-        const key = `${roundNum}-${slotIdx}`;
-        const r = RESULTS[key];
-        if(!r){
-          html += `<tr><td class="mono-cell">CRT ${court}</td><td>Team ${m[0]} v Team ${m[1]}</td><td colspan="3" class="num-col"><span class="pill">Upcoming</span></td></tr>`;
-          return;
-        }
-        const bp = matchPoints(r);
-        const setsWinner = bp.setsBonusA === 1 ? null : (bp.setsBonusA ? m[0] : m[1]);
-        const gamesWinner = bp.gamesBonusA === 1 ? null : (bp.gamesBonusA ? m[0] : m[1]);
-        let bonusHtml;
-        if(setsWinner !== null && setsWinner === gamesWinner){
-          bonusHtml = `<span class="pill done">+2 sets &amp; games bonus &rarr; Team ${setsWinner}</span>`;
-        } else {
-          const setsTxt = setsWinner === null
-            ? `<span class="pill">Sets tied · +1 each</span>`
-            : `<span class="pill done">+2 sets &rarr; Team ${setsWinner}</span>`;
-          const gamesTxt = gamesWinner === null
-            ? `<span class="pill">Games tied · +1 each</span>`
-            : `<span class="pill done">+2 games &rarr; Team ${gamesWinner}</span>`;
-          bonusHtml = `${setsTxt} ${gamesTxt}`;
-        }
-        html += `<tr>
-          <td class="mono-cell">CRT ${court}</td>
-          <td>Team ${m[0]} v Team ${m[1]}</td>
-          <td class="mono-cell num-col">${r.setsA}&ndash;${r.setsB}</td>
-          <td class="mono-cell num-col">${r.gamesA}&ndash;${r.gamesB}</td>
-          <td class="mono-cell num-col"><strong>${bp.totalA}&ndash;${bp.totalB}</strong></td>
-        </tr>
-        <tr class="note-row"><td colspan="5">${bonusHtml}</td></tr>`;
+      const wetDate = WET_ROUNDS[roundNum];
+      const wetTag = WET_ROUNDS.hasOwnProperty(roundNum)
+        ? `<span class="pill wet">${wetDate ? `Scheduled for replay ${wetDate}` : 'WET — replay date TBC'}</span>`
+        : '';
+      html += renderRoundBlock({
+        label: roundNum, roundNum, pairs, dateLabel: DATES[idx],
+        headTags: nextTag + wetTag, extraClass: isNext ? ' round-block--next' : '',
+        teamFilter, wet: WET_ROUNDS.hasOwnProperty(roundNum),
       });
-      html += `</tbody></table></div></div>`;
     });
     if(!teamFilter){
       RESERVE_DATES.forEach((date, i) => {
+        const replayRoundNum = Number(Object.keys(WET_ROUNDS).find(rn => WET_ROUNDS[rn] === date));
+        if(replayRoundNum){
+          html += renderRoundBlock({
+            label: 15 + i, roundNum: replayRoundNum, pairs: ALL_ROUNDS[replayRoundNum - 1], dateLabel: date,
+            headTags: `<span class="pill wet">Replay of Round ${replayRoundNum}</span>`,
+            teamFilter: null, wet: false,
+          });
+          return;
+        }
         html += `<div class="round-block"><div class="round-head"><span class="round-num">RD ${15+i}</span><span class="round-date">${date}</span></div>
           <div class="table-wrap"><table><tbody><tr><td style="padding:14px;"><span class="pill wet">Wet weather reserve</span> — only played if a round robin week is postponed</td></tr></tbody></table></div></div>`;
       });

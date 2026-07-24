@@ -156,9 +156,8 @@
   }
 
   function renderFinals(){
-    const totalRounds = ALL_ROUNDS.length;
     const next = getNextRound();
-    const roundsPlayed = next ? next.roundNum - 1 : totalRounds;
+    const roundsPlayed = getRoundsPlayed();
 
     document.getElementById('finals-note').textContent = roundsPlayed === 0
       ? 'Standings will appear here once Round 1 results are entered.'

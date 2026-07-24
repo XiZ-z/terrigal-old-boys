@@ -173,7 +173,7 @@
     const next = getNextRound();
 
     if(next){
-      const roundsPlayed = next.roundNum - 1;
+      const roundsPlayed = getRoundsPlayed();
       document.getElementById('progress-fill').style.width = `${Math.round((roundsPlayed / totalSteps) * 100)}%`;
       document.getElementById('progress-text').textContent = `${roundsPlayed} of ${totalRounds} rounds played`;
       return;

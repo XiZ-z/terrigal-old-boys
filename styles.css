@@ -194,7 +194,7 @@ tbody tr:hover{background:#FBFAF6;}
   border-radius:20px; background:var(--paper); color:var(--ink-soft);
   border:1px solid var(--paper-line);
 }
-.pill.wet{background:#EAF2E9; color:#3E6B4A; border-color:#CFE0CC;}
+.pill.wet{background:#E7F0F7; color:#2E6690; border-color:#C9DCEA;}
 
 /* ---------- Recent form (home) ---------- */
 .form-wrap{margin-bottom:32px;}
@@ -228,7 +228,7 @@ tbody tr:hover{background:#FBFAF6;}
 }
 .round-block{margin-bottom:14px;}
 .round-head{
-  display:flex; align-items:center; gap:10px; margin-bottom:8px;
+  display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;
 }
 .round-num{
   font-family:'IBM Plex Mono'; font-weight:600; font-size:12px;

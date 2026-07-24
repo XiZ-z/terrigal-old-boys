@@ -20,6 +20,14 @@ const DATES = [
 
 const RESERVE_DATES = ["11 Nov 2026", "18 Nov 2026"];
 
+// Rounds postponed due to wet weather. Value is the reserve date it's
+// been rescheduled to, or null while that's still TBC. Remove the round's
+// entry entirely once it's actually been replayed and its results are
+// entered -- from that point it behaves like any other completed round.
+const WET_ROUNDS = {
+  // 5: "11 Nov 2026",
+};
+
 const FINALS_DATES = {
   elimination: "25 Nov 2026",
   semis: "2 Dec 2026",
@@ -204,15 +212,40 @@ function computeSeasonRecords(){
 }
 
 // ---------- Next match night (first round with no results entered yet) ----------
+function roundIsPlayed(roundNum){
+  return ALL_ROUNDS[roundNum - 1].every((m, courtIdx) => RESULTS[`${roundNum}-${courtIdx}`]);
+}
+
+// A wet round gets skipped -- the following week just plays the next
+// round in the queue rather than waiting, so a wet round's index position
+// no longer matches when it's actually played. Prefer whatever round is
+// really next; only fall back to a still-pending wet round once nothing
+// else is left, so the round robin doesn't get falsely reported complete
+// while a wet round's replay is still outstanding.
 function getNextRound(){
+  let pendingWet = null;
   for(let idx=0; idx<ALL_ROUNDS.length; idx++){
     const roundNum = idx+1;
-    const allPlayed = ALL_ROUNDS[idx].every((m, courtIdx) => RESULTS[`${roundNum}-${courtIdx}`]);
-    if(!allPlayed){
-      return { roundNum, pairs: ALL_ROUNDS[idx], date: DATES[idx] };
+    if(roundIsPlayed(roundNum)) continue;
+    if(WET_ROUNDS.hasOwnProperty(roundNum)){
+      pendingWet = pendingWet || { roundNum, pairs: ALL_ROUNDS[idx], date: DATES[idx] };
+      continue;
     }
+    return { roundNum, pairs: ALL_ROUNDS[idx], date: DATES[idx] };
   }
-  return null; // round robin complete
+  return pendingWet; // null once every round, including any wet one, is played
+}
+
+// Count of rounds actually completed so far -- used instead of
+// "next.roundNum - 1" wherever progress is displayed, since a wet round
+// being skipped-and-replayed-later can leave a later round finished
+// before an earlier (wet) one.
+function getRoundsPlayed(){
+  let count = 0;
+  for(let roundNum = 1; roundNum <= ALL_ROUNDS.length; roundNum++){
+    if(roundIsPlayed(roundNum)) count++;
+  }
+  return count;
 }
 
 // ---------- Finals ----------
