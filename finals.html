@@ -149,9 +149,22 @@
     connect('semi2', 'final', 'bracket-line--final');
   }
 
+  // Below the breakpoint, finals.html switches to a stacked vertical
+  // layout (see styles.css) where the horizontal connector math doesn't
+  // apply -- skip drawing lines there instead of computing garbage coords.
+  const bracketMQ = window.matchMedia('(min-width: 701px)');
+  function updateBracketLines(){
+    if(bracketMQ.matches){
+      drawBracketLines();
+    } else {
+      document.getElementById('bracket-lines').innerHTML = '';
+    }
+  }
+
   renderFinals();
-  drawBracketLines();
-  window.addEventListener('resize', drawBracketLines);
+  updateBracketLines();
+  window.addEventListener('resize', updateBracketLines);
+  bracketMQ.addEventListener('change', updateBracketLines);
 </script>
 <script src="nav.js"></script>
 </body>

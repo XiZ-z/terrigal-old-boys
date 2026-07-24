@@ -344,9 +344,26 @@ body[data-page="ladder"] tbody td{vertical-align:top;}
 .bracket-line{fill:none; stroke:var(--paper-line); stroke-width:2;}
 .bracket-line--final{stroke:var(--ball-dark);}
 
-@media (max-width:640px){
-  .bracket{gap:32px;}
-  .bracket-round{min-width:168px;}
+@media (max-width:700px){
+  .bracket-scroll{overflow-x:visible; margin:0; padding:0;}
+  .bracket{flex-direction:column; min-width:0; gap:0;}
+  .bracket-lines{display:none;}
+  .bracket-round{min-width:0; margin-bottom:24px;}
+  .bracket-round:last-child{margin-bottom:0;}
+  .bracket-head{margin-bottom:14px;}
+  .bracket-slots{
+    position:relative; padding-left:22px; gap:14px;
+  }
+  .bracket-slots::before{
+    content:''; position:absolute; left:6px; top:4px; bottom:4px;
+    width:2px; background:var(--paper-line);
+  }
+  .bracket-slot{position:relative;}
+  .bracket-slot::before{
+    content:''; position:absolute; left:-20px; top:50%; transform:translateY(-50%);
+    width:10px; height:10px; border-radius:50%;
+    background:var(--ball); border:2px solid var(--ball-dark);
+  }
 }
 
 /* ---------- Rules ---------- */
