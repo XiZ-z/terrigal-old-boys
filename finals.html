@@ -111,6 +111,35 @@
     document.getElementById('game3').innerHTML = matchLabel(3, 4);
   }
 
+  // Semi/Final columns have shorter headers than Elimination's (no note
+  // line), so independent per-column CSS centering leaves their boxes
+  // drifted off the true vertical rhythm. Nudge them into mathematically
+  // correct positions -- Semi 1 (winner G1 v winner G3) centered on the
+  // Elimination column's midpoint, Semi 2 mirrored below it by the same
+  // gap, Final centered between the two semis -- before drawing lines.
+  function resetAlignment(){
+    document.querySelectorAll('.bracket-slot').forEach(el => { el.style.transform = ''; });
+  }
+
+  function alignBracket(){
+    resetAlignment();
+    const bracket = document.getElementById('bracket');
+    const slotEl = slot => bracket.querySelector(`[data-slot="${slot}"]`);
+    const centerOf = slot => {
+      const r = slotEl(slot).querySelector('.bmatch').getBoundingClientRect();
+      return r.top + r.height / 2;
+    };
+
+    const overallCenter = (centerOf('game1') + centerOf('game3')) / 2;
+
+    const s1 = centerOf('semi1'), s2 = centerOf('semi2');
+    const semiGap = s2 - s1;
+    slotEl('semi1').style.transform = `translateY(${overallCenter - semiGap / 2 - s1}px)`;
+    slotEl('semi2').style.transform = `translateY(${overallCenter + semiGap / 2 - s2}px)`;
+
+    slotEl('final').style.transform = `translateY(${overallCenter - centerOf('final')}px)`;
+  }
+
   // Draws curved connector lines between bracket slots. Only deterministic
   // advancement paths get a line -- Semi 2's "best-placed loser" slot isn't
   // tied to a specific elimination game, so it's called out with a footnote
@@ -154,7 +183,9 @@
   // apply -- skip drawing lines there instead of computing garbage coords.
   const bracketMQ = window.matchMedia('(min-width: 701px)');
   function updateBracketLines(){
+    resetAlignment();
     if(bracketMQ.matches){
+      alignBracket();
       drawBracketLines();
     } else {
       document.getElementById('bracket-lines').innerHTML = '';
