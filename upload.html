@@ -81,14 +81,16 @@
   for (let i = 1; i <= 14; i++) {
     const opt = document.createElement('option');
     opt.value = i;
-    // Flag wet-postponed rounds directly in the dropdown -- replays are
-    // always entered under their original round number (not the reserve
-    // date they're actually played on), so this is the only cue that
-    // "Round 5" is the one to pick during a make-up week, before you'd
-    // otherwise only see the WET note after selecting it.
+    // Show each round's date directly in the dropdown so it's a useful cue
+    // on its own, not just via the matchup preview below. Wet-postponed
+    // rounds get an extra flag -- replays are always entered under their
+    // original round number (not the reserve date they're actually played
+    // on), so this is the only cue that "Round 5" is the one to pick
+    // during a make-up week, before you'd otherwise only see the WET note
+    // after selecting it.
     opt.textContent = WET_ROUNDS.hasOwnProperty(i)
       ? `☔ Round ${i} — WET replay (${WET_ROUNDS[i] || 'date TBC'})`
-      : `Round ${i}`;
+      : `Round ${i} — ${DATES[i - 1]}`;
     roundSelect.appendChild(opt);
   }
 
