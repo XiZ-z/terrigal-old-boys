@@ -15,30 +15,61 @@
 <main>
   <div class="section-title">Finals series</div>
   <p class="section-sub">Top six from the round robin qualify. Teams placed 7th and 8th are dropped.</p>
-  <div class="bracket">
-    <div class="bracket-stage">
-      <h4>Elimination round <span class="bracket-date">Wed 25 Nov</span></h4>
-      <p class="bracket-note" id="finals-note"></p>
-      <div class="bracket-matches">
-        <div class="bmatch"><div class="lbl">Game 1</div><span id="game1">1st v 6th</span></div>
-        <div class="bmatch"><div class="lbl">Game 2</div><span id="game2">2nd v 5th</span></div>
-        <div class="bmatch"><div class="lbl">Game 3</div><span id="game3">3rd v 4th</span></div>
+
+  <div class="champion-banner" id="champion-banner"></div>
+
+  <div class="bracket-scroll">
+    <div class="bracket" id="bracket">
+      <svg class="bracket-lines" id="bracket-lines"></svg>
+
+      <div class="bracket-round">
+        <div class="bracket-head">
+          <h4>Elimination</h4>
+          <span class="bracket-date">Wed 25 Nov</span>
+          <p class="bracket-note" id="finals-note"></p>
+        </div>
+        <div class="bracket-slots">
+          <div class="bracket-slot" data-slot="game1">
+            <div class="bmatch"><div class="lbl">Game 1</div><div class="bmatch-body" id="game1"></div></div>
+          </div>
+          <div class="bracket-slot" data-slot="game2">
+            <div class="bmatch"><div class="lbl">Game 2</div><div class="bmatch-body" id="game2"></div></div>
+          </div>
+          <div class="bracket-slot" data-slot="game3">
+            <div class="bmatch"><div class="lbl">Game 3</div><div class="bmatch-body" id="game3"></div></div>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="bracket-stage">
-      <h4>Semi finals <span class="bracket-date">Wed 2 Dec</span></h4>
-      <div class="bracket-matches">
-        <div class="bmatch"><div class="lbl">Semi 1</div>Winner G1 v Winner G3</div>
-        <div class="bmatch"><div class="lbl">Semi 2</div>Winner G2 v Best-placed loser</div>
+
+      <div class="bracket-round">
+        <div class="bracket-head">
+          <h4>Semi finals</h4>
+          <span class="bracket-date">Wed 2 Dec</span>
+        </div>
+        <div class="bracket-slots">
+          <div class="bracket-slot" data-slot="semi1">
+            <div class="bmatch"><div class="lbl">Semi 1</div><div class="bmatch-body" id="semi1"></div></div>
+          </div>
+          <div class="bracket-slot" data-slot="semi2">
+            <div class="bmatch"><div class="lbl">Semi 2</div><div class="bmatch-body" id="semi2"></div></div>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="bracket-stage">
-      <h4>Grand final <span class="bracket-date">Wed 9 Dec</span></h4>
-      <div class="bracket-matches">
-        <div class="bmatch"><div class="lbl">Final</div>Winner Semi 1 v Winner Semi 2</div>
+
+      <div class="bracket-round">
+        <div class="bracket-head">
+          <h4>Grand final</h4>
+          <span class="bracket-date">Wed 9 Dec</span>
+        </div>
+        <div class="bracket-slots">
+          <div class="bracket-slot" data-slot="final">
+            <div class="bmatch bmatch--final"><div class="lbl">Final</div><div class="bmatch-body" id="final"></div></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
+  <p class="bracket-wildcard">* Best-placed loser: whichever of the three Elimination losers finished highest on the round-robin ladder — not tied to a specific game.</p>
 </main>
 
 <div id="footer-placeholder"></div>
@@ -52,34 +83,176 @@
     return `${n}th`;
   }
 
-  function renderFinals(){
-    const totalRounds = ALL_ROUNDS.length;
-    const next = getNextRound();
-    const roundsPlayed = next ? next.roundNum - 1 : totalRounds;
-    const rankLabel = (rankA, rankB) => `${ordinal(rankA)} v ${ordinal(rankB)}`;
+  const SLOT_META = {
+    game1: { rank: [1, 6] },
+    game2: { rank: [2, 5] },
+    game3: { rank: [3, 4] },
+    semi1: { placeholder: 'Winner G1 v Winner G3' },
+    semi2: { placeholder: 'Winner G2 v Best-placed loser*' },
+    final: { placeholder: 'Winner Semi 1 v Winner Semi 2' },
+  };
 
-    if(roundsPlayed === 0){
-      document.getElementById('finals-note').textContent = 'Standings will appear here once Round 1 results are entered.';
-      document.getElementById('game1').textContent = rankLabel(1, 6);
-      document.getElementById('game2').textContent = rankLabel(2, 5);
-      document.getElementById('game3').textContent = rankLabel(3, 4);
+  // Renders one bracket box from its resolved state (see computeFinalsState
+  // in data.js): no state yet -> generic placeholder; teams known but not
+  // played -> "Team X v Team Y"; result entered -> winner highlighted with
+  // the score, reordered winner-first regardless of which side was A/B.
+  function renderSlot(slot, state){
+    const meta = SLOT_META[slot];
+    const s = state ? state[slot] : null;
+    const el = document.getElementById(slot);
+
+    if(!s){
+      el.innerHTML = meta.rank ? `${ordinal(meta.rank[0])} v ${ordinal(meta.rank[1])}` : meta.placeholder;
       return;
     }
 
-    document.getElementById('finals-note').textContent = next
-      ? `Provisional — based on standings through Round ${roundsPlayed}.`
-      : 'Final standings — round robin complete.';
+    if(!s.result){
+      const rankSuffix = meta.rank
+        ? ` <span class="bracket-rank">(${ordinal(meta.rank[0])} v ${ordinal(meta.rank[1])})</span>`
+        : '';
+      el.innerHTML = `Team ${s.teamA} v Team ${s.teamB}${rankSuffix}`;
+      return;
+    }
 
-    const rows = computeLadder();
-    const matchLabel = (rankA, rankB) => {
-      const a = rows[rankA - 1], b = rows[rankB - 1];
-      return `Team ${a.team} v Team ${b.team} <span class="bracket-rank">(${rankLabel(rankA, rankB)})</span>`;
-    };
-    document.getElementById('game1').innerHTML = matchLabel(1, 6);
-    document.getElementById('game2').innerHTML = matchLabel(2, 5);
-    document.getElementById('game3').innerHTML = matchLabel(3, 4);
+    const r = s.result;
+    const winnerIsA = s.winner === s.teamA;
+    const loser = winnerIsA ? s.teamB : s.teamA;
+    const winSets = winnerIsA ? r.setsA : r.setsB, loseSets = winnerIsA ? r.setsB : r.setsA;
+    const winGames = winnerIsA ? r.gamesA : r.gamesB, loseGames = winnerIsA ? r.gamesB : r.gamesA;
+    el.innerHTML = `
+      <div class="bmatch-result">
+        <span class="bmatch-winner">Team ${s.winner}</span>
+        <span class="bmatch-vs">def</span>
+        <span class="bmatch-loser">Team ${loser}</span>
+      </div>
+      <div class="bmatch-score">${winSets}&ndash;${loseSets} sets &middot; ${winGames}&ndash;${loseGames} games</div>
+    `;
   }
+
+  const TROPHY_SVG = `<svg class="champion-trophy" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <path d="M22 8h20v11a10 10 0 0 1-20 0V8z" fill="var(--ball)" stroke="var(--ball-dark)" stroke-width="2"/>
+    <path d="M22 12h-7a2 2 0 0 0-2 2v2a9 9 0 0 0 9 9" fill="none" stroke="var(--ball-dark)" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M42 12h7a2 2 0 0 1 2 2v2a9 9 0 0 1-9 9" fill="none" stroke="var(--ball-dark)" stroke-width="2.5" stroke-linecap="round"/>
+    <rect x="29" y="29" width="6" height="9" fill="var(--ball-dark)"/>
+    <rect x="21" y="38" width="22" height="5" rx="2" fill="var(--court-dark)"/>
+    <rect x="17" y="43" width="30" height="6" rx="2" fill="var(--court-dark)"/>
+  </svg>`;
+
+  function renderChampionBanner(state){
+    const banner = document.getElementById('champion-banner');
+    const finalDone = state && state.final && state.final.result;
+    if(!finalDone){
+      banner.classList.remove('show');
+      banner.innerHTML = '';
+      return;
+    }
+    banner.classList.add('show');
+    banner.innerHTML = `
+      ${TROPHY_SVG}
+      <div class="champion-text">
+        <span class="champion-pill">Team ${state.final.winner}</span>
+        <span class="champion-label">2026 Season 2 Champions</span>
+      </div>`;
+  }
+
+  function renderFinals(){
+    const next = getNextRound();
+    const roundsPlayed = getRoundsPlayed();
+
+    document.getElementById('finals-note').textContent = roundsPlayed === 0
+      ? 'Standings will appear here once Round 1 results are entered.'
+      : (next ? `Provisional — based on standings through Round ${roundsPlayed}.` : 'Final standings — round robin complete.');
+
+    const state = roundsPlayed > 0 ? computeFinalsState() : null;
+    Object.keys(SLOT_META).forEach(slot => renderSlot(slot, state));
+    renderChampionBanner(state);
+  }
+
+  // Semi/Final columns have shorter headers than Elimination's (no note
+  // line), so independent per-column CSS centering leaves their boxes
+  // drifted off the true vertical rhythm. Nudge them into mathematically
+  // correct positions -- Semi 1 (winner G1 v winner G3) centered on the
+  // Elimination column's midpoint, Semi 2 mirrored below it by the same
+  // gap, Final centered between the two semis -- before drawing lines.
+  function resetAlignment(){
+    document.querySelectorAll('.bracket-slot').forEach(el => { el.style.transform = ''; });
+  }
+
+  function alignBracket(){
+    resetAlignment();
+    const bracket = document.getElementById('bracket');
+    const slotEl = slot => bracket.querySelector(`[data-slot="${slot}"]`);
+    const centerOf = slot => {
+      const r = slotEl(slot).querySelector('.bmatch').getBoundingClientRect();
+      return r.top + r.height / 2;
+    };
+
+    const overallCenter = (centerOf('game1') + centerOf('game3')) / 2;
+
+    const s1 = centerOf('semi1'), s2 = centerOf('semi2');
+    const semiGap = s2 - s1;
+    slotEl('semi1').style.transform = `translateY(${overallCenter - semiGap / 2 - s1}px)`;
+    slotEl('semi2').style.transform = `translateY(${overallCenter + semiGap / 2 - s2}px)`;
+
+    slotEl('final').style.transform = `translateY(${overallCenter - centerOf('final')}px)`;
+  }
+
+  // Draws curved connector lines between bracket slots. Only deterministic
+  // advancement paths get a line -- Semi 2's "best-placed loser" slot isn't
+  // tied to a specific elimination game, so it's called out with a footnote
+  // instead of a line that would misrepresent which game it comes from.
+  function drawBracketLines(){
+    const svg = document.getElementById('bracket-lines');
+    const bracket = document.getElementById('bracket');
+    const rect = bracket.getBoundingClientRect();
+    svg.setAttribute('width', bracket.scrollWidth);
+    svg.setAttribute('height', bracket.scrollHeight);
+    svg.innerHTML = '';
+
+    function anchor(slotName, side){
+      const box = bracket.querySelector(`[data-slot="${slotName}"] .bmatch`);
+      const r = box.getBoundingClientRect();
+      return {
+        x: (side === 'right' ? r.right : r.left) - rect.left,
+        y: r.top - rect.top + r.height / 2,
+      };
+    }
+
+    function connect(fromSlot, toSlot, extraClass){
+      const p1 = anchor(fromSlot, 'right');
+      const p2 = anchor(toSlot, 'left');
+      const midX = (p1.x + p2.x) / 2;
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', `M ${p1.x} ${p1.y} C ${midX} ${p1.y}, ${midX} ${p2.y}, ${p2.x} ${p2.y}`);
+      path.setAttribute('class', `bracket-line${extraClass ? ' ' + extraClass : ''}`);
+      svg.appendChild(path);
+    }
+
+    connect('game1', 'semi1');
+    connect('game3', 'semi1');
+    connect('game2', 'semi2');
+    connect('semi1', 'final', 'bracket-line--final');
+    connect('semi2', 'final', 'bracket-line--final');
+  }
+
+  // Below the breakpoint, finals.html switches to a stacked vertical
+  // layout (see styles.css) where the horizontal connector math doesn't
+  // apply -- skip drawing lines there instead of computing garbage coords.
+  const bracketMQ = window.matchMedia('(min-width: 701px)');
+  function updateBracketLines(){
+    resetAlignment();
+    if(bracketMQ.matches){
+      alignBracket();
+      drawBracketLines();
+    } else {
+      document.getElementById('bracket-lines').innerHTML = '';
+    }
+  }
+
   renderFinals();
+  updateBracketLines();
+  window.addEventListener('resize', updateBracketLines);
+  bracketMQ.addEventListener('change', updateBracketLines);
 </script>
 <script src="nav.js"></script>
 </body>
