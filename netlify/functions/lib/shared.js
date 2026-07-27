@@ -1,5 +1,6 @@
 // Shared helpers for the score-sheet upload/review functions.
 const { getStore } = require('@netlify/blobs');
+const { ALL_ROUNDS, computeFinalsState } = require('../../../data.js');
 
 const STORE_NAME = 'sheets';
 
@@ -33,6 +34,48 @@ function json(statusCode, body) {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   };
+}
+
+// Real team numbers for a pending/approved record, so the reviewer/archive
+// sees "Team 3 v Team 6" instead of generic A/B sides. Weekly pairings are
+// a fixed schedule (ALL_ROUNDS), so this is always accurate. Finals
+// pairings for game1-3 come from ladder seeding and are resolvable as soon
+// as there are enough weekly results in; semis/final additionally need the
+// earlier finals matches approved, so those resolve to null until then.
+// Uses whatever data.js was last deployed here, so it can lag behind
+// dev's live results for finals specifically -- fine for now since finals
+// are months away.
+function resolveTeams(record) {
+  if (record.mode === 'weekly') {
+    const slot = Number(record.key.split('-')[1]);
+    const [teamA, teamB] = ALL_ROUNDS[record.roundNum - 1][slot];
+    return { teamA, teamB };
+  }
+  const state = computeFinalsState();
+  const slotInfo = state[record.finalsSlot];
+  return slotInfo ? { teamA: slotInfo.teamA, teamB: slotInfo.teamB } : { teamA: null, teamB: null };
+}
+
+// submit-sheet has no login (the review/approve step is the real gate), but
+// it's a public endpoint that triggers a paid Anthropic API call each time
+// -- this bounds worst-case cost/abuse from that URL getting hammered,
+// without adding friction for the handful of genuine weekly submissions.
+// Generous on purpose: no real club member should ever come close to it.
+const RATE_LIMIT_PER_DAY = 20;
+
+function clientIp(event) {
+  return event.headers['x-nf-client-connection-ip']
+    || (event.headers['x-forwarded-for'] || '').split(',')[0].trim()
+    || 'unknown';
+}
+
+async function checkRateLimit(store, event) {
+  const ip = clientIp(event);
+  const key = `ratelimit/${new Date().toISOString().slice(0, 10)}/${ip}`;
+  const count = Number(await store.get(key)) || 0;
+  if (count >= RATE_LIMIT_PER_DAY) return false;
+  await store.set(key, String(count + 1));
+  return true;
 }
 
 // ---------- GitHub Contents API (commits approved results to data.js) ----------
@@ -99,6 +142,58 @@ function upsertEntry(content, blockConst, keyLiteral, valueLiteral) {
   return content.slice(0, bodyStart) + body + content.slice(endIdx);
 }
 
+// Marks a round postponed in WET_ROUNDS, auto-assigning the correct reserve
+// date per the season's fixed rule: the first wet round of the season gets
+// the first reserve date, the second wet round gets the second, and any
+// further one has nowhere to go and is recorded as having no replay (null)
+// -- mirrors the manual process this replaces. reserveDates is data.js's
+// own RESERVE_DATES, passed in so this stays in sync with the season config.
+function upsertWetRound(content, roundNum, reserveDates) {
+  const startMarker = 'const WET_ROUNDS = {';
+  const startIdx = content.indexOf(startMarker);
+  if (startIdx === -1) throw new Error('WET_ROUNDS not found in data.js');
+  const bodyStart = startIdx + startMarker.length;
+  const endIdx = content.indexOf('\n};', bodyStart);
+  if (endIdx === -1) throw new Error('WET_ROUNDS closing not found');
+
+  let body = content.slice(bodyStart, endIdx);
+
+  // Ignore the commented-out example line when deciding which reserve
+  // date is still free, or it would always look like the first one's
+  // already taken.
+  const activeBody = body.split('\n').filter(l => !l.trim().startsWith('//')).join('\n');
+  const nextDate = reserveDates.find(d => !activeBody.includes(`"${d}"`));
+  const valueLiteral = nextDate ? `"${nextDate}"` : 'null';
+
+  const lineRe = new RegExp(`\\n(?!\\s*//)\\s*${roundNum}\\s*:\\s*(?:"[^"]*"|null)\\s*,?`);
+  const newLine = `\n  ${roundNum}: ${valueLiteral},`;
+  body = lineRe.test(body) ? body.replace(lineRe, newLine) : body + newLine;
+
+  return content.slice(0, bodyStart) + body + content.slice(endIdx);
+}
+
+// Bumps one finals stage's wet count in FINALS_WET_WEEKS by 1 -- unlike a
+// wet weekly round, a wet finals night has no reserve week, it just pushes
+// that stage (and everything after it, via getFinalsDates()'s cascade) to
+// the following Wednesday.
+function upsertFinalsWetWeek(content, stage) {
+  const startMarker = 'const FINALS_WET_WEEKS = {';
+  const startIdx = content.indexOf(startMarker);
+  if (startIdx === -1) throw new Error('FINALS_WET_WEEKS not found in data.js');
+  const bodyStart = startIdx + startMarker.length;
+  const endIdx = content.indexOf('\n};', bodyStart);
+  if (endIdx === -1) throw new Error('FINALS_WET_WEEKS closing not found');
+
+  let body = content.slice(bodyStart, endIdx);
+  const lineRe = new RegExp(`\\n(\\s*)${stage}\\s*:\\s*(\\d+)\\s*,?`);
+  const match = body.match(lineRe);
+  const current = match ? Number(match[2]) : 0;
+  const newLine = `\n  ${stage}: ${current + 1},`;
+  body = lineRe.test(body) ? body.replace(lineRe, newLine) : body + newLine;
+
+  return content.slice(0, bodyStart) + body + content.slice(endIdx);
+}
+
 // ---------- Anthropic vision read of the score sheet photo ----------
 async function readScoreSheet(base64Data, mediaType, isFinals) {
   const finalsNote = isFinals
@@ -141,7 +236,7 @@ Respond with ONLY a single JSON object, no other text, no markdown code fences, 
 }
 
 module.exports = {
-  sheetsStore, isAuthed, json,
-  getDataJs, putDataJs, upsertEntry,
-  readScoreSheet,
+  sheetsStore, isAuthed, json, resolveTeams,
+  getDataJs, putDataJs, upsertEntry, upsertWetRound, upsertFinalsWetWeek,
+  readScoreSheet, checkRateLimit,
 };

@@ -21,11 +21,18 @@ const DATES = [
 const RESERVE_DATES = ["11 Nov 2026", "18 Nov 2026"];
 
 // Rounds postponed due to wet weather. Value is the reserve date it's
-// been rescheduled to, or null while that's still TBC. Remove the round's
-// entry entirely once it's actually been replayed and its results are
-// entered -- from that point it behaves like any other completed round.
+// been rescheduled to, or null if there's no reserve slot left for it (only
+// two reserve weeks exist, so a third+ wet round in a season just never
+// gets replayed). Remove the round's entry entirely once it's actually
+// been replayed and its results are entered -- from that point it behaves
+// like any other completed round.
 const WET_ROUNDS = {
-  // 5: "11 Nov 2026",
+  // Sample data for poc/dev preview only -- shows all three states (first
+  // reserve date, second reserve date, no replay left). Cleared before
+  // the real season.
+  5: "11 Nov 2026",
+  9: "18 Nov 2026",
+  12: null,
 };
 
 const FINALS_DATES = {
@@ -34,6 +41,43 @@ const FINALS_DATES = {
   grandFinal: "9 Dec 2026",
 };
 
+// Unlike the round robin's fixed reserve weeks, a wet finals night just
+// pushes straight to the following Wednesday -- so this counts how many
+// times each stage has itself been wet, and getFinalsDates() below cascades
+// that forward onto every later stage too, since finals nights are played
+// in strict sequence. A stage's own count is frozen once real results are
+// entered for it, so a later stage going wet doesn't retroactively change
+// an earlier (already-played) stage's displayed date.
+const FINALS_WET_WEEKS = {
+  // Sample data for poc/dev preview only -- demonstrates the "pushed back a
+  // week" cascade/pill. Cleared before the real season.
+  elimination: 1,
+  semis: 0,
+  grandFinal: 0,
+};
+const FINALS_STAGE_ORDER = ['elimination', 'semis', 'grandFinal'];
+
+function addWeeks(dateStr, weeks){
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + weeks * 7);
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// Effective date for each finals stage, accounting for wet postponements.
+// Returns { elimination, semis, grandFinal }, each { date, weeksDelayed }.
+function getFinalsDates(){
+  let cumulative = 0;
+  const result = {};
+  FINALS_STAGE_ORDER.forEach(stage => {
+    cumulative += FINALS_WET_WEEKS[stage] || 0;
+    result[stage] = {
+      date: cumulative > 0 ? addWeeks(FINALS_DATES[stage], cumulative) : FINALS_DATES[stage],
+      weeksDelayed: cumulative,
+    };
+  });
+  return result;
+}
+
 // ---------- Weekly results ----------
 // Add one line here per court per week, once that court's paper score sheet
 // has been scanned in and read back. Key is "roundNumber-pairingSlot" (0-3)
@@ -41,7 +85,22 @@ const FINALS_DATES = {
 // setsA/setsB: out of 6 total sets, can include .5 (a 4-4 set is a draw).
 // gamesA/gamesB: total games across all 6 sets, always sums to 48.
 const RESULTS = {
-  // Cleared for the real season -- add real results here once played.
+  // Sample data for poc/dev preview only -- rounds 1-3. Cleared before the real season.
+  // Round 1 — Team 1 v Team 8, Team 2 v Team 7, Team 3 v Team 6, Team 4 v Team 5
+  "1-0": { setsA: 4,   setsB: 2,   gamesA: 27, gamesB: 21 },
+  "1-1": { setsA: 3.5, setsB: 2.5, gamesA: 25, gamesB: 23 },
+  "1-2": { setsA: 6,   setsB: 0,   gamesA: 30, gamesB: 18 },
+  "1-3": { setsA: 2,   setsB: 4,   gamesA: 20, gamesB: 28 },
+  // Round 2 — Team 1 v Team 7, Team 8 v Team 6, Team 2 v Team 5, Team 3 v Team 4
+  "2-0": { setsA: 4.5, setsB: 1.5, gamesA: 28, gamesB: 20 },
+  "2-1": { setsA: 2.5, setsB: 3.5, gamesA: 23, gamesB: 25 },
+  "2-2": { setsA: 3,   setsB: 3,   gamesA: 22, gamesB: 26 },
+  "2-3": { setsA: 4,   setsB: 2,   gamesA: 26, gamesB: 22 },
+  // Round 3 — Team 1 v Team 6, Team 7 v Team 5, Team 8 v Team 4, Team 2 v Team 3
+  "3-0": { setsA: 5,   setsB: 1,   gamesA: 31, gamesB: 17 },
+  "3-1": { setsA: 2,   setsB: 4,   gamesA: 19, gamesB: 29 },
+  "3-2": { setsA: 3.5, setsB: 2.5, gamesA: 21, gamesB: 27 },
+  "3-3": { setsA: 1.5, setsB: 4.5, gamesA: 18, gamesB: 30 },
 };
 
 // ---------- Court display ----------
@@ -241,7 +300,13 @@ function getRoundsPlayed(){
 // and games after bonus points is settled by a tiebreaker set that isn't
 // otherwise captured in those four numbers (finals only).
 const FINALS_RESULTS = {
-  // Cleared for the real season -- add real results here once played.
+  // Sample data for poc/dev preview only -- pretends Games 1-3 and Semi 1 have
+  // been played, with Semi 2 resolved (teams known) but not yet played,
+  // and the Grand Final still awaiting Semi 2. Cleared before real finals.
+  game1: { setsA: 4,   setsB: 2,   gamesA: 27, gamesB: 21, winner: 'A' },
+  game2: { setsA: 2,   setsB: 4,   gamesA: 20, gamesB: 28, winner: 'B' },
+  game3: { setsA: 3.5, setsB: 2.5, gamesA: 25, gamesB: 23, winner: 'A' },
+  semi1: { setsA: 4.5, setsB: 1.5, gamesA: 28, gamesB: 20, winner: 'A' },
 };
 
 // Resolves each bracket slot's actual teams (from ladder seeding and prior
@@ -303,6 +368,7 @@ function computeFinalsState(){
 if (typeof module !== 'undefined') {
   module.exports = {
     BASE_ROUNDS, ALL_ROUNDS, DATES, RESERVE_DATES, WET_ROUNDS, FINALS_DATES,
+    FINALS_WET_WEEKS, FINALS_STAGE_ORDER, getFinalsDates,
     RESULTS, FINALS_RESULTS,
     displayCourt, slotForCourt, matchPoints,
     headToHeadStats, headToHeadCompare, computeLadder,

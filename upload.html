@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
 <title>Upload Score Sheet — Terrigal Old Boys</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -15,31 +16,34 @@
 <main>
   <div class="section-title">Upload Score Sheet</div>
   <p class="section-sub">Take a photo of the whole score sheet for your court and submit it here. It'll be read automatically and then double-checked before it goes live — no need to type any numbers in yourself.</p>
+  <div class="note-box">
+    <span class="pill wet">WET</span>
+    <span>Uploading the score for a round that was postponed? Select that round's <strong>original number</strong> below (not today's date) — it's marked WET in the list so it's easy to spot. Rained out and haven't played yet? Use "Report Wet Round" instead.</span>
+  </div>
 
   <div class="upload-card">
     <div class="mode-toggle">
       <button type="button" id="mode-weekly" class="active">Weekly round</button>
       <button type="button" id="mode-finals">Finals match</button>
+      <button type="button" id="mode-wet">Report Wet Round</button>
     </div>
 
     <form id="upload-form">
       <div id="weekly-fields">
-        <div class="field-grid">
-          <div class="field-row">
-            <label for="round-num">Round</label>
-            <select id="round-num" name="roundNum">
-              <!-- populated by script -->
-            </select>
-          </div>
-          <div class="field-row">
-            <label for="court-num">Court</label>
-            <select id="court-num" name="courtNum">
-              <option value="1">Court 1</option>
-              <option value="2">Court 2</option>
-              <option value="3">Court 3</option>
-              <option value="4">Court 4</option>
-            </select>
-          </div>
+        <div class="field-row">
+          <label for="round-num">Round</label>
+          <select id="round-num" name="roundNum">
+            <!-- populated by script -->
+          </select>
+        </div>
+        <div class="field-row">
+          <label for="court-num">Court</label>
+          <select id="court-num" name="courtNum">
+            <option value="1">Court 1</option>
+            <option value="2">Court 2</option>
+            <option value="3">Court 3</option>
+            <option value="4">Court 4</option>
+          </select>
         </div>
       </div>
 
@@ -57,11 +61,36 @@
         </div>
       </div>
 
+      <div id="wet-fields" style="display:none;">
+        <p class="section-sub" style="margin-top:0;">Rained out before a round or finals night could be played? Report it here — no photo needed. Once approved, a weekly round gets a replay date assigned automatically; a finals night just pushes straight to the following Wednesday.</p>
+        <div class="mode-toggle" style="margin-bottom:14px;">
+          <button type="button" id="wet-mode-weekly" class="active">Weekly round</button>
+          <button type="button" id="wet-mode-finals">Finals stage</button>
+        </div>
+        <div id="wet-weekly-fields">
+          <div class="field-row">
+            <label for="wet-round-num">Round</label>
+            <select id="wet-round-num" name="wetRoundNum">
+              <!-- populated by script -->
+            </select>
+          </div>
+        </div>
+        <div id="wet-finals-fields" style="display:none;">
+          <div class="field-row">
+            <label for="wet-finals-stage">Finals stage</label>
+            <select id="wet-finals-stage" name="wetFinalsStage">
+              <!-- populated by script -->
+            </select>
+          </div>
+        </div>
+        <div id="wet-already-reported-note" class="note-box" style="display:none;"></div>
+      </div>
+
       <div id="matchup-preview" class="review-meta"></div>
 
-      <div class="field-row">
+      <div id="photo-field" class="field-row">
         <label for="photo">Photo of the whole score sheet</label>
-        <input type="file" id="photo" name="photo" accept="image/*" capture="environment" required>
+        <input type="file" id="photo" name="photo" accept="image/*" capture="environment">
       </div>
 
       <button type="submit" class="btn btn-primary" id="submit-btn">Submit for review</button>
@@ -76,38 +105,123 @@
 <script src="nav.js"></script>
 <script src="data.js"></script>
 <script>
-  const roundSelect = document.getElementById('round-num');
-  for (let i = 1; i <= 14; i++) {
-    const opt = document.createElement('option');
-    opt.value = i;
-    opt.textContent = `Round ${i}`;
-    roundSelect.appendChild(opt);
+  function roundOptionLabel(i) {
+    // Show each round's date directly in the dropdown so it's a useful cue
+    // on its own. Wet-postponed rounds get an extra flag -- replays are
+    // always entered under their original round number (not the reserve
+    // date they're actually played on), so this is the only cue that
+    // "Round 5" is the one to pick during a make-up week.
+    return WET_ROUNDS.hasOwnProperty(i)
+      ? (WET_ROUNDS[i] ? `☔ Round ${i} — WET replay (${WET_ROUNDS[i]})` : `☔ Round ${i} — WET, no replay`)
+      : `Round ${i} — ${DATES[i - 1]}`;
   }
+
+  const roundSelect = document.getElementById('round-num');
+  const wetRoundSelect = document.getElementById('wet-round-num');
+  for (let i = 1; i <= 14; i++) {
+    [roundSelect, wetRoundSelect].forEach(select => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = roundOptionLabel(i);
+      select.appendChild(opt);
+    });
+  }
+
+  const FINALS_STAGE_LABELS = { elimination: 'Elimination', semis: 'Semi Finals', grandFinal: 'Grand Final' };
+  const wetFinalsStageSelect = document.getElementById('wet-finals-stage');
+  const finalsDates = getFinalsDates();
+  Object.keys(FINALS_STAGE_LABELS).forEach(stage => {
+    const opt = document.createElement('option');
+    opt.value = stage;
+    const wetNote = finalsDates[stage].weeksDelayed > 0 ? ' ☔ already pushed back' : '';
+    opt.textContent = `${FINALS_STAGE_LABELS[stage]} — ${finalsDates[stage].date}${wetNote}`;
+    wetFinalsStageSelect.appendChild(opt);
+  });
 
   const modeWeeklyBtn = document.getElementById('mode-weekly');
   const modeFinalsBtn = document.getElementById('mode-finals');
+  const modeWetBtn = document.getElementById('mode-wet');
   const weeklyFields = document.getElementById('weekly-fields');
   const finalsFields = document.getElementById('finals-fields');
+  const wetFields = document.getElementById('wet-fields');
+  const photoField = document.getElementById('photo-field');
+  const photoInput = document.getElementById('photo');
   const matchupPreview = document.getElementById('matchup-preview');
   const courtSelect = document.getElementById('court-num');
   const finalsSlotSelect = document.getElementById('finals-slot');
+  const submitBtn = document.getElementById('submit-btn');
   let mode = 'weekly';
+
+  const wetModeWeeklyBtn = document.getElementById('wet-mode-weekly');
+  const wetModeFinalsBtn = document.getElementById('wet-mode-finals');
+  const wetWeeklyFields = document.getElementById('wet-weekly-fields');
+  const wetFinalsFields = document.getElementById('wet-finals-fields');
+  const wetAlreadyReportedNote = document.getElementById('wet-already-reported-note');
+  let wetSubMode = 'weekly';
+
+  // Warns if the selected round/stage has already been confirmed WET.
+  // Only checks already-*approved* data (WET_ROUNDS / FINALS_WET_WEEKS),
+  // since this page has no login and can't see other pending submissions
+  // still awaiting Ash's review -- those duplicates get flagged for him
+  // on the review page instead.
+  function updateWetAlreadyReportedNote() {
+    if (wetSubMode === 'weekly') {
+      const roundNum = Number(wetRoundSelect.value);
+      if (WET_ROUNDS.hasOwnProperty(roundNum)) {
+        const replay = WET_ROUNDS[roundNum];
+        wetAlreadyReportedNote.innerHTML = `<span class="pill wet">Already reported</span> <span>Round ${roundNum} is already marked WET${replay ? ` (replay ${replay})` : ' (no replay)'}. Still fine to submit again if this is a new/different postponement.</span>`;
+        wetAlreadyReportedNote.style.display = 'flex';
+      } else {
+        wetAlreadyReportedNote.style.display = 'none';
+      }
+    } else {
+      const stage = wetFinalsStageSelect.value;
+      // Check this stage's OWN wet count, not its cascaded/displayed date --
+      // semis' date shifts if elimination was wet, but that doesn't mean
+      // semis itself has ever been reported.
+      if (FINALS_WET_WEEKS[stage] > 0) {
+        const info = getFinalsDates()[stage];
+        wetAlreadyReportedNote.innerHTML = `<span class="pill wet">Already reported</span> <span>${FINALS_STAGE_LABELS[stage]} has already been reported WET (now scheduled ${info.date}). Still fine to submit again if it's wet again.</span>`;
+        wetAlreadyReportedNote.style.display = 'flex';
+      } else {
+        wetAlreadyReportedNote.style.display = 'none';
+      }
+    }
+  }
+
+  function setWetSubMode(newSubMode) {
+    wetSubMode = newSubMode;
+    wetModeWeeklyBtn.classList.toggle('active', wetSubMode === 'weekly');
+    wetModeFinalsBtn.classList.toggle('active', wetSubMode === 'finals');
+    wetWeeklyFields.style.display = wetSubMode === 'weekly' ? '' : 'none';
+    wetFinalsFields.style.display = wetSubMode === 'finals' ? '' : 'none';
+    updateWetAlreadyReportedNote();
+  }
+  wetModeWeeklyBtn.addEventListener('click', () => setWetSubMode('weekly'));
+  wetModeFinalsBtn.addEventListener('click', () => setWetSubMode('finals'));
+  wetRoundSelect.addEventListener('change', updateWetAlreadyReportedNote);
+  wetFinalsStageSelect.addEventListener('change', updateWetAlreadyReportedNote);
 
   // Shows which real teams a round+court or finals slot resolves to, so
   // whoever's uploading can confirm they picked the right match before
   // submitting a photo. Finals slots resolve via computeFinalsState(),
-  // which needs enough prior results in to seed/advance that far.
+  // which needs enough prior results in to seed/advance that far. Not
+  // shown at all in wet-report mode -- there's no match to confirm yet.
   function updateMatchupPreview() {
+    if (mode === 'wet') {
+      matchupPreview.textContent = '';
+      return;
+    }
     if (mode === 'weekly') {
       const roundNum = Number(roundSelect.value);
       const courtNum = Number(courtSelect.value);
       const slot = slotForCourt(roundNum, courtNum);
       const [teamA, teamB] = ALL_ROUNDS[roundNum - 1][slot];
-      let dateNote = DATES[roundNum - 1];
-      if (WET_ROUNDS.hasOwnProperty(roundNum)) {
-        dateNote += ` — WET, replay ${WET_ROUNDS[roundNum] || 'date TBC'}`;
-      }
-      matchupPreview.textContent = `Team ${teamA} v Team ${teamB} · ${dateNote}`;
+      const dateText = DATES[roundNum - 1];
+      const wetPill = WET_ROUNDS.hasOwnProperty(roundNum)
+        ? `<span class="pill wet">${WET_ROUNDS[roundNum] ? `WET &middot; replay ${WET_ROUNDS[roundNum]}` : 'WET &middot; no replay'}</span>`
+        : '';
+      matchupPreview.innerHTML = `Team ${teamA} v Team ${teamB} &middot; ${dateText} ${wetPill}`;
     } else {
       const state = computeFinalsState();
       const slotInfo = state[finalsSlotSelect.value];
@@ -120,28 +234,29 @@
     }
   }
 
+  function setMode(newMode) {
+    mode = newMode;
+    modeWeeklyBtn.classList.toggle('active', mode === 'weekly');
+    modeFinalsBtn.classList.toggle('active', mode === 'finals');
+    modeWetBtn.classList.toggle('active', mode === 'wet');
+    weeklyFields.style.display = mode === 'weekly' ? '' : 'none';
+    finalsFields.style.display = mode === 'finals' ? '' : 'none';
+    wetFields.style.display = mode === 'wet' ? '' : 'none';
+    photoField.style.display = mode === 'wet' ? 'none' : '';
+    photoInput.required = mode !== 'wet';
+    submitBtn.textContent = mode === 'wet' ? 'Report as WET' : 'Submit for review';
+    updateMatchupPreview();
+    if (mode === 'wet') updateWetAlreadyReportedNote();
+  }
+
   roundSelect.addEventListener('change', updateMatchupPreview);
   courtSelect.addEventListener('change', updateMatchupPreview);
   finalsSlotSelect.addEventListener('change', updateMatchupPreview);
+  modeWeeklyBtn.addEventListener('click', () => setMode('weekly'));
+  modeFinalsBtn.addEventListener('click', () => setMode('finals'));
+  modeWetBtn.addEventListener('click', () => setMode('wet'));
 
-  modeWeeklyBtn.addEventListener('click', () => {
-    mode = 'weekly';
-    modeWeeklyBtn.classList.add('active');
-    modeFinalsBtn.classList.remove('active');
-    weeklyFields.style.display = '';
-    finalsFields.style.display = 'none';
-    updateMatchupPreview();
-  });
-  modeFinalsBtn.addEventListener('click', () => {
-    mode = 'finals';
-    modeFinalsBtn.classList.add('active');
-    modeWeeklyBtn.classList.remove('active');
-    weeklyFields.style.display = 'none';
-    finalsFields.style.display = '';
-    updateMatchupPreview();
-  });
-
-  updateMatchupPreview();
+  setMode('weekly');
 
   function fileToBase64(file) {
     return new Promise((resolve, reject) => {
@@ -153,27 +268,33 @@
   }
 
   const form = document.getElementById('upload-form');
-  const submitBtn = document.getElementById('submit-btn');
   const status = document.getElementById('status');
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const photoInput = document.getElementById('photo');
-    const file = photoInput.files[0];
-    if (!file) return;
 
     submitBtn.disabled = true;
     status.className = 'status-msg';
-    status.textContent = 'Reading photo, this can take a few seconds…';
 
     try {
-      const photoBase64 = await fileToBase64(file);
-      const payload = { mode, mediaType: file.type, photoBase64 };
-      if (mode === 'weekly') {
-        payload.roundNum = Number(document.getElementById('round-num').value);
-        payload.courtNum = Number(document.getElementById('court-num').value);
+      let payload;
+      if (mode === 'wet') {
+        status.textContent = 'Submitting…';
+        payload = wetSubMode === 'weekly'
+          ? { mode: 'weekly', wet: true, roundNum: Number(wetRoundSelect.value) }
+          : { mode: 'finals', wet: true, finalsStage: wetFinalsStageSelect.value };
       } else {
-        payload.finalsSlot = document.getElementById('finals-slot').value;
+        const file = photoInput.files[0];
+        if (!file) { submitBtn.disabled = false; return; }
+        status.textContent = 'Reading photo, this can take a few seconds…';
+        const photoBase64 = await fileToBase64(file);
+        payload = { mode, mediaType: file.type, photoBase64 };
+        if (mode === 'weekly') {
+          payload.roundNum = Number(roundSelect.value);
+          payload.courtNum = Number(courtSelect.value);
+        } else {
+          payload.finalsSlot = finalsSlotSelect.value;
+        }
       }
 
       const res = await fetch('/.netlify/functions/submit-sheet', {
@@ -188,8 +309,15 @@
         status.textContent = data.error || 'Something went wrong submitting this.';
       } else {
         status.className = 'status-msg success';
-        status.textContent = `Submitted — read as ${data.extracted.setsA}–${data.extracted.setsB} sets, ${data.extracted.gamesA}–${data.extracted.gamesB} games. Awaiting approval before it goes live.`;
+        if (mode === 'wet' && wetSubMode === 'weekly') {
+          status.textContent = `Reported Round ${payload.roundNum} as WET. Awaiting approval before it's marked postponed.`;
+        } else if (mode === 'wet') {
+          status.textContent = `Reported ${FINALS_STAGE_LABELS[payload.finalsStage]} as WET. Awaiting approval before it's pushed back a week.`;
+        } else {
+          status.textContent = `Submitted — read as ${data.extracted.setsA}–${data.extracted.setsB} sets, ${data.extracted.gamesA}–${data.extracted.gamesB} games. Awaiting approval before it goes live.`;
+        }
         form.reset();
+        setMode(mode);
       }
     } catch (err) {
       status.className = 'status-msg error';

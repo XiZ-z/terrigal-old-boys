@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
 <title>Fixtures — Terrigal Old Boys</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -98,7 +99,7 @@
       const nextTag = isNext ? `<span class="pill next-tag">Next</span>` : '';
       const wetDate = WET_ROUNDS[roundNum];
       const wetTag = WET_ROUNDS.hasOwnProperty(roundNum)
-        ? `<span class="pill wet">${wetDate ? `Scheduled for replay ${wetDate}` : 'WET — replay date TBC'}</span>`
+        ? `<span class="pill wet">${wetDate ? `Scheduled for replay ${wetDate}` : 'WET — no replay'}</span>`
         : '';
       html += renderRoundBlock({
         label: roundNum, roundNum, pairs, dateLabel: DATES[idx],

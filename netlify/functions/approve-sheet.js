@@ -1,7 +1,9 @@
-// Password-gated: publishes an approved (possibly Ash-corrected) result
-// straight to data.js on GITHUB_BRANCH via the GitHub Contents API, then
-// archives the pending record (kept, not deleted, as an audit trail).
-const { sheetsStore, isAuthed, json, getDataJs, putDataJs, upsertEntry } = require('./lib/shared');
+// Password-gated: publishes an approved (possibly Ash-corrected) result, or
+// a wet-round report, straight to data.js on GITHUB_BRANCH via the GitHub
+// Contents API, then archives the pending record (kept, not deleted, as an
+// audit trail).
+const { RESERVE_DATES } = require('../../data.js');
+const { sheetsStore, isAuthed, json, getDataJs, putDataJs, upsertEntry, upsertWetRound, upsertFinalsWetWeek } = require('./lib/shared');
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
@@ -18,6 +20,26 @@ exports.handler = async (event) => {
   const store = sheetsStore();
   const record = await store.get(`pending/${id}.json`, { type: 'json' });
   if (!record) return json(404, { error: 'Pending submission not found' });
+
+  if (record.wet && record.mode === 'finals') {
+    const { content, sha } = await getDataJs();
+    const newContent = upsertFinalsWetWeek(content, record.finalsStage);
+    await putDataJs(newContent, sha, `Push ${record.finalsStage} back a week for wet weather (approved via review)`);
+
+    await store.setJSON(`approved/${id}.json`, { ...record, approvedAt: new Date().toISOString() });
+    await store.delete(`pending/${id}.json`);
+    return json(200, { ok: true, key: `wet-finals-${record.finalsStage}` });
+  }
+
+  if (record.wet) {
+    const { content, sha } = await getDataJs();
+    const newContent = upsertWetRound(content, record.roundNum, RESERVE_DATES);
+    await putDataJs(newContent, sha, `Mark Round ${record.roundNum} as WET (approved via review)`);
+
+    await store.setJSON(`approved/${id}.json`, { ...record, approvedAt: new Date().toISOString() });
+    await store.delete(`pending/${id}.json`);
+    return json(200, { ok: true, key: `wet-round-${record.roundNum}` });
+  }
 
   const setsA = Number(payload.setsA);
   const setsB = Number(payload.setsB);

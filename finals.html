@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
 <title>Finals — Terrigal Old Boys</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -25,7 +26,7 @@
       <div class="bracket-round">
         <div class="bracket-head">
           <h4>Elimination</h4>
-          <span class="bracket-date">Wed 25 Nov</span>
+          <span class="bracket-date" id="date-elimination"></span>
           <p class="bracket-note" id="finals-note"></p>
         </div>
         <div class="bracket-slots">
@@ -44,7 +45,7 @@
       <div class="bracket-round">
         <div class="bracket-head">
           <h4>Semi finals</h4>
-          <span class="bracket-date">Wed 2 Dec</span>
+          <span class="bracket-date" id="date-semis"></span>
         </div>
         <div class="bracket-slots">
           <div class="bracket-slot" data-slot="semi1">
@@ -59,7 +60,7 @@
       <div class="bracket-round">
         <div class="bracket-head">
           <h4>Grand final</h4>
-          <span class="bracket-date">Wed 9 Dec</span>
+          <span class="bracket-date" id="date-grandFinal"></span>
         </div>
         <div class="bracket-slots">
           <div class="bracket-slot" data-slot="final">
@@ -155,6 +156,24 @@
       </div>`;
   }
 
+  // Wed-DD-Mon to match this page's compact header style (fixtures.html
+  // shows the full "DD Mon YYYY" elsewhere; no year needed up here).
+  function shortDate(dateStr){
+    const d = new Date(dateStr);
+    const weekday = d.toLocaleDateString('en-GB', { weekday: 'short' });
+    const dayMonth = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    return `${weekday} ${dayMonth}`;
+  }
+
+  function renderFinalsDates(){
+    const dates = getFinalsDates();
+    ['elimination', 'semis', 'grandFinal'].forEach(stage => {
+      const info = dates[stage];
+      const wetPill = info.weeksDelayed > 0 ? ` <span class="pill wet">WET &middot; pushed back</span>` : '';
+      document.getElementById(`date-${stage}`).innerHTML = shortDate(info.date) + wetPill;
+    });
+  }
+
   function renderFinals(){
     const next = getNextRound();
     const roundsPlayed = getRoundsPlayed();
@@ -163,6 +182,7 @@
       ? 'Standings will appear here once Round 1 results are entered.'
       : (next ? `Provisional — based on standings through Round ${roundsPlayed}.` : 'Final standings — round robin complete.');
 
+    renderFinalsDates();
     const state = roundsPlayed > 0 ? computeFinalsState() : null;
     Object.keys(SLOT_META).forEach(slot => renderSlot(slot, state));
     renderChampionBanner(state);
