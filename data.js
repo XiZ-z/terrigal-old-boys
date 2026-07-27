@@ -21,9 +21,11 @@ const DATES = [
 const RESERVE_DATES = ["11 Nov 2026", "18 Nov 2026"];
 
 // Rounds postponed due to wet weather. Value is the reserve date it's
-// been rescheduled to, or null while that's still TBC. Remove the round's
-// entry entirely once it's actually been replayed and its results are
-// entered -- from that point it behaves like any other completed round.
+// been rescheduled to, or null if there's no reserve slot left for it (only
+// two reserve weeks exist, so a third+ wet round in a season just never
+// gets replayed). Remove the round's entry entirely once it's actually
+// been replayed and its results are entered -- from that point it behaves
+// like any other completed round.
 const WET_ROUNDS = {
   // 5: "11 Nov 2026",
 };

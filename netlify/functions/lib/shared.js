@@ -102,9 +102,9 @@ function upsertEntry(content, blockConst, keyLiteral, valueLiteral) {
 // Marks a round postponed in WET_ROUNDS, auto-assigning the correct reserve
 // date per the season's fixed rule: the first wet round of the season gets
 // the first reserve date, the second wet round gets the second, and any
-// further one has nowhere to go and is recorded as still-TBC (null) --
-// mirrors the manual process this replaces. reserveDates is data.js's own
-// RESERVE_DATES, passed in so this stays in sync with the season config.
+// further one has nowhere to go and is recorded as having no replay (null)
+// -- mirrors the manual process this replaces. reserveDates is data.js's
+// own RESERVE_DATES, passed in so this stays in sync with the season config.
 function upsertWetRound(content, roundNum, reserveDates) {
   const startMarker = 'const WET_ROUNDS = {';
   const startIdx = content.indexOf(startMarker);

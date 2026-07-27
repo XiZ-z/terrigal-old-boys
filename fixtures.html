@@ -98,7 +98,7 @@
       const nextTag = isNext ? `<span class="pill next-tag">Next</span>` : '';
       const wetDate = WET_ROUNDS[roundNum];
       const wetTag = WET_ROUNDS.hasOwnProperty(roundNum)
-        ? `<span class="pill wet">${wetDate ? `Scheduled for replay ${wetDate}` : 'WET — replay date TBC'}</span>`
+        ? `<span class="pill wet">${wetDate ? `Scheduled for replay ${wetDate}` : 'WET — no replay'}</span>`
         : '';
       html += renderRoundBlock({
         label: roundNum, roundNum, pairs, dateLabel: DATES[idx],

@@ -96,7 +96,7 @@
     // date they're actually played on), so this is the only cue that
     // "Round 5" is the one to pick during a make-up week.
     return WET_ROUNDS.hasOwnProperty(i)
-      ? `☔ Round ${i} — WET replay (${WET_ROUNDS[i] || 'date TBC'})`
+      ? (WET_ROUNDS[i] ? `☔ Round ${i} — WET replay (${WET_ROUNDS[i]})` : `☔ Round ${i} — WET, no replay`)
       : `Round ${i} — ${DATES[i - 1]}`;
   }
 
@@ -142,7 +142,7 @@
       const [teamA, teamB] = ALL_ROUNDS[roundNum - 1][slot];
       const dateText = DATES[roundNum - 1];
       const wetPill = WET_ROUNDS.hasOwnProperty(roundNum)
-        ? `<span class="pill wet">WET &middot; replay ${WET_ROUNDS[roundNum] || 'date TBC'}</span>`
+        ? `<span class="pill wet">${WET_ROUNDS[roundNum] ? `WET &middot; replay ${WET_ROUNDS[roundNum]}` : 'WET &middot; no replay'}</span>`
         : '';
       matchupPreview.innerHTML = `Team ${teamA} v Team ${teamB} &middot; ${dateText} ${wetPill}`;
     } else {
