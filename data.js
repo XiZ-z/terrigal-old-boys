@@ -52,7 +52,7 @@ const FINALS_DATES = {
 const FINALS_WET_WEEKS = {
   // Sample data for poc/dev preview only -- demonstrates the "pushed back a
   // week" cascade/pill. Cleared before the real season.
-  elimination: 1,
+  elimination: 2,
   semis: 0,
   grandFinal: 0,
 };
