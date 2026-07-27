@@ -27,7 +27,12 @@ const RESERVE_DATES = ["11 Nov 2026", "18 Nov 2026"];
 // been replayed and its results are entered -- from that point it behaves
 // like any other completed round.
 const WET_ROUNDS = {
-  // 5: "11 Nov 2026",
+  // Sample data for poc/dev preview only -- shows all three states
+  // (first reserve date, second reserve date, no replay left). Cleared
+  // before the real season.
+  5: "11 Nov 2026",
+  9: "18 Nov 2026",
+  12: null,
 };
 
 const FINALS_DATES = {
