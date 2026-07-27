@@ -84,6 +84,18 @@ exports.handler = async (event) => {
     return json(502, { error: `Could not read the photo: ${err.message}` });
   }
 
+  // The model doesn't always return the exact shape asked for on an
+  // ambiguous/hard-to-read photo -- catch that here with a clear message,
+  // rather than silently staging a pending record with undefined numbers
+  // that could corrupt data.js if approved without the blank fields
+  // being noticed.
+  const requiredFields = ['setsA', 'setsB', 'gamesA', 'gamesB'];
+  const hasAllNumbers = requiredFields.every(f => typeof extracted[f] === 'number' && Number.isFinite(extracted[f]));
+  const winnerOk = mode !== 'finals' || extracted.winner === 'A' || extracted.winner === 'B';
+  if (!hasAllNumbers || !winnerOk) {
+    return json(502, { error: `Could not read this photo clearly (got: ${JSON.stringify(extracted)}) -- try again with a clearer, well-lit photo of the Total row.` });
+  }
+
   const id = randomUUID();
   await store.set(`pending/${id}.jpg`, Buffer.from(photoBase64, 'base64'));
   await store.setJSON(`pending/${id}.json`, {

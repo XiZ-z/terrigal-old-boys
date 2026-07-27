@@ -92,12 +92,27 @@
     authStatus.textContent = 'Wrong password.';
   }
 
+  // Reads a fetch response as text first, then tries to parse it as JSON --
+  // shows the *raw* body on failure (which reveals the real error, e.g. a
+  // Netlify platform crash shape or a non-JSON error page) rather than a
+  // dead-end "unknown error" that hides whatever actually went wrong.
+  async function parseOrRawText(res) {
+    const text = await res.text();
+    try { return { data: JSON.parse(text), raw: text }; }
+    catch { return { data: null, raw: text }; }
+  }
+
   async function loadPending() {
     const res = await fetch('/.netlify/functions/list-pending', { headers: authHeader() });
     if (res.status === 401) { handleAuthFailure(); return; }
-    const data = await res.json();
+    const { data, raw } = await parseOrRawText(res);
     authGate.style.display = 'none';
     tabsWrap.style.display = '';
+    if (!res.ok) {
+      const detail = (data && (data.error || data.errorMessage)) || raw;
+      reviewList.innerHTML = `<p class="empty-note">Couldn't load pending submissions (HTTP ${res.status}): ${detail}</p>`;
+      return;
+    }
     renderList(data.items);
   }
 
@@ -105,7 +120,12 @@
     archiveList.innerHTML = '<p class="empty-note">Loading…</p>';
     const res = await fetch('/.netlify/functions/list-approved', { headers: authHeader() });
     if (res.status === 401) { handleAuthFailure(); return; }
-    const data = await res.json();
+    const { data, raw } = await parseOrRawText(res);
+    if (!res.ok) {
+      const detail = (data && (data.error || data.errorMessage)) || raw;
+      archiveList.innerHTML = `<p class="empty-note">Couldn't load the archive (HTTP ${res.status}): ${detail}</p>`;
+      return;
+    }
     archiveLoaded = true;
     archiveItems = data.items;
     applyArchiveFilters();
@@ -220,7 +240,7 @@
         </div>` : '';
       return `
         <div class="review-item" data-id="${item.id}">
-          <img src="${item.photoDataUrl}" alt="Score sheet photo" style="cursor:zoom-in;" onclick="openLightbox(this.src)">
+          <img data-photo-id="${item.id}" data-photo-store="pending" alt="Score sheet photo" style="cursor:zoom-in; background:var(--paper-line); min-height:120px;" onclick="openLightbox(this.src)">
           <div>
             <div class="review-meta">${label} ${duplicatePill(item)} &middot; submitted ${new Date(item.createdAt).toLocaleString()}</div>
             <div class="field-grid">
@@ -238,6 +258,26 @@
           </div>
         </div>`;
     }).join('');
+    loadPhotosInto(reviewList);
+  }
+
+  // Each photo is its own request (get-photo.js), not inlined into the list
+  // response -- combining every photo into one JSON payload hits Netlify's
+  // 6MB function response cap as soon as more than a couple are pending.
+  async function loadPhotoInto(imgEl) {
+    const id = imgEl.dataset.photoId;
+    const storeName = imgEl.dataset.photoStore;
+    try {
+      const res = await fetch(`/.netlify/functions/get-photo?store=${storeName}&id=${id}`, { headers: authHeader() });
+      if (!res.ok) { imgEl.alt = 'Could not load photo'; return; }
+      const blob = await res.blob();
+      imgEl.src = URL.createObjectURL(blob);
+    } catch {
+      imgEl.alt = 'Could not load photo';
+    }
+  }
+  function loadPhotosInto(container) {
+    container.querySelectorAll('img[data-photo-id]').forEach(loadPhotoInto);
   }
 
   const FINALS_STAGE_LABELS_ARCHIVE = { elimination: 'Elimination', semis: 'Semi Finals', grandFinal: 'Grand Final' };
@@ -278,13 +318,14 @@
 
       return `
         <div class="review-item">
-          <img src="${item.photoDataUrl}" alt="Score sheet photo" style="cursor:zoom-in;" onclick="openLightbox(this.src)">
+          <img data-photo-id="${item.id}" data-photo-store="approved" alt="Score sheet photo" style="cursor:zoom-in; background:var(--paper-line); min-height:120px;" onclick="openLightbox(this.src)">
           <div>
             <div class="review-meta">${label} &middot; approved ${approvedWhen}</div>
             <div class="review-meta mono">${r.setsA}&ndash;${r.setsB} sets &middot; ${r.gamesA}&ndash;${r.gamesB} games${winnerNote}</div>
           </div>
         </div>`;
     }).join('');
+    loadPhotosInto(archiveList);
   }
 
   function openLightbox(src) {
@@ -292,10 +333,18 @@
     document.getElementById('photo-lightbox').classList.add('show');
   }
 
+  // Disables both buttons on this item's card while a request is in
+  // flight, so a rapid double-click can't fire two approve/reject calls
+  // for the same id before the first one lands.
+  function setItemButtonsDisabled(id, disabled) {
+    document.querySelectorAll(`[data-id="${id}"] .review-actions button`).forEach(btn => { btn.disabled = disabled; });
+  }
+
   async function approve(id) {
     const statusEl = document.getElementById(`status-${id}`);
     statusEl.className = 'status-msg';
     statusEl.textContent = 'Publishing…';
+    setItemButtonsDisabled(id, true);
 
     const setsAEl = document.getElementById(`setsA-${id}`);
     const body = setsAEl ? {
@@ -308,28 +357,53 @@
     const winnerEl = document.getElementById(`winner-${id}`);
     if (winnerEl) body.winner = winnerEl.value;
 
-    const res = await fetch('/.netlify/functions/approve-sheet', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', ...authHeader() },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
-    if (!res.ok) {
+    try {
+      const res = await fetch('/.netlify/functions/approve-sheet', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...authHeader() },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        statusEl.className = 'status-msg error';
+        statusEl.textContent = data.error || 'Failed to publish.';
+        setItemButtonsDisabled(id, false);
+        return;
+      }
+      archiveLoaded = false; // this approval added a new archive entry -- refetch next time that tab opens
+      loadPending();
+    } catch {
       statusEl.className = 'status-msg error';
-      statusEl.textContent = data.error || 'Failed to publish.';
-      return;
+      statusEl.textContent = 'Network error -- check your connection and try again.';
+      setItemButtonsDisabled(id, false);
     }
-    archiveLoaded = false; // this approval added a new archive entry -- refetch next time that tab opens
-    loadPending();
   }
 
   async function reject(id) {
-    await fetch('/.netlify/functions/reject-sheet', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', ...authHeader() },
-      body: JSON.stringify({ id }),
-    });
-    loadPending();
+    const statusEl = document.getElementById(`status-${id}`);
+    statusEl.className = 'status-msg';
+    statusEl.textContent = 'Rejecting…';
+    setItemButtonsDisabled(id, true);
+
+    try {
+      const res = await fetch('/.netlify/functions/reject-sheet', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...authHeader() },
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        statusEl.className = 'status-msg error';
+        statusEl.textContent = data.error || 'Failed to reject -- try again.';
+        setItemButtonsDisabled(id, false);
+        return;
+      }
+      loadPending();
+    } catch {
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'Network error -- check your connection and try again.';
+      setItemButtonsDisabled(id, false);
+    }
   }
 
   document.getElementById('unlock-btn').addEventListener('click', () => {

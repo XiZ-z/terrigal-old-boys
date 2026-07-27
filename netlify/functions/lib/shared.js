@@ -212,7 +212,13 @@ Respond with ONLY a single JSON object, no other text, no markdown code fences, 
     },
     body: JSON.stringify({
       model: 'claude-sonnet-5',
-      max_tokens: 300,
+      // Generous headroom, not just enough for the JSON reply itself --
+      // the model can emit a `thinking` block before its answer (see the
+      // content[0] fix below), and a harder-to-read photo could reason
+      // longer before responding. 300 worked in testing by luck (clean
+      // photos, short reasoning); this avoids truncating mid-JSON on a
+      // real messy sheet.
+      max_tokens: 1024,
       messages: [{
         role: 'user',
         content: [
@@ -227,6 +233,9 @@ Respond with ONLY a single JSON object, no other text, no markdown code fences, 
     throw new Error(`Anthropic API failed: ${res.status} ${text}`);
   }
   const data = await res.json();
+  if (data.stop_reason === 'max_tokens') {
+    throw new Error('The photo read got cut off before finishing (ran out of response budget) -- try again, or enter this one manually.');
+  }
   // Don't assume content[0] is the text block -- the model can emit a
   // `thinking` block first, pushing the actual answer to a later index.
   const textBlock = data.content.find(block => block.type === 'text');
