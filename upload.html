@@ -14,7 +14,7 @@
 
 <main>
   <div class="section-title">Upload Score Sheet</div>
-  <p class="section-sub">Photograph your court's Total row and submit it here. It'll be read automatically and then double-checked before it goes live — no need to type any numbers in yourself.</p>
+  <p class="section-sub">Take a photo of the whole score sheet for your court and submit it here. It'll be read automatically and then double-checked before it goes live — no need to type any numbers in yourself.</p>
 
   <div class="upload-card">
     <div class="mode-toggle">
@@ -57,8 +57,10 @@
         </div>
       </div>
 
+      <div id="matchup-preview" class="review-meta"></div>
+
       <div class="field-row">
-        <label for="photo">Photo of the Total row</label>
+        <label for="photo">Photo of the whole score sheet</label>
         <input type="file" id="photo" name="photo" accept="image/*" capture="environment" required>
       </div>
 
@@ -72,6 +74,7 @@
 <div id="footer-placeholder"></div>
 
 <script src="nav.js"></script>
+<script src="data.js"></script>
 <script>
   const roundSelect = document.getElementById('round-num');
   for (let i = 1; i <= 14; i++) {
@@ -85,7 +88,41 @@
   const modeFinalsBtn = document.getElementById('mode-finals');
   const weeklyFields = document.getElementById('weekly-fields');
   const finalsFields = document.getElementById('finals-fields');
+  const matchupPreview = document.getElementById('matchup-preview');
+  const courtSelect = document.getElementById('court-num');
+  const finalsSlotSelect = document.getElementById('finals-slot');
   let mode = 'weekly';
+
+  // Shows which real teams a round+court or finals slot resolves to, so
+  // whoever's uploading can confirm they picked the right match before
+  // submitting a photo. Finals slots resolve via computeFinalsState(),
+  // which needs enough prior results in to seed/advance that far.
+  function updateMatchupPreview() {
+    if (mode === 'weekly') {
+      const roundNum = Number(roundSelect.value);
+      const courtNum = Number(courtSelect.value);
+      const slot = slotForCourt(roundNum, courtNum);
+      const [teamA, teamB] = ALL_ROUNDS[roundNum - 1][slot];
+      let dateNote = DATES[roundNum - 1];
+      if (WET_ROUNDS.hasOwnProperty(roundNum)) {
+        dateNote += ` — WET, replay ${WET_ROUNDS[roundNum] || 'date TBC'}`;
+      }
+      matchupPreview.textContent = `Team ${teamA} v Team ${teamB} · ${dateNote}`;
+    } else {
+      const state = computeFinalsState();
+      const slotInfo = state[finalsSlotSelect.value];
+      const dateKey = finalsSlotSelect.value.startsWith('game') ? 'elimination'
+        : finalsSlotSelect.value.startsWith('semi') ? 'semis' : 'grandFinal';
+      const dateNote = FINALS_DATES[dateKey];
+      matchupPreview.textContent = slotInfo
+        ? `Team ${slotInfo.teamA} v Team ${slotInfo.teamB} · ${dateNote}`
+        : `Teams not decided yet for this match · ${dateNote}`;
+    }
+  }
+
+  roundSelect.addEventListener('change', updateMatchupPreview);
+  courtSelect.addEventListener('change', updateMatchupPreview);
+  finalsSlotSelect.addEventListener('change', updateMatchupPreview);
 
   modeWeeklyBtn.addEventListener('click', () => {
     mode = 'weekly';
@@ -93,6 +130,7 @@
     modeFinalsBtn.classList.remove('active');
     weeklyFields.style.display = '';
     finalsFields.style.display = 'none';
+    updateMatchupPreview();
   });
   modeFinalsBtn.addEventListener('click', () => {
     mode = 'finals';
@@ -100,7 +138,10 @@
     modeWeeklyBtn.classList.remove('active');
     weeklyFields.style.display = 'none';
     finalsFields.style.display = '';
+    updateMatchupPreview();
   });
+
+  updateMatchupPreview();
 
   function fileToBase64(file) {
     return new Promise((resolve, reject) => {

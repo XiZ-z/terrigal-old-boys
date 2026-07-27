@@ -64,15 +64,18 @@
     }
 
     reviewList.innerHTML = items.map(item => {
+      const teamA = item.teamA ? `Team ${item.teamA}` : 'Team A';
+      const teamB = item.teamB ? `Team ${item.teamB}` : 'Team B';
+      const matchup = `${teamA} v ${teamB}`;
       const label = item.mode === 'finals'
-        ? `Finals — ${item.finalsSlot}`
-        : `Round ${item.roundNum}, Court ${item.courtNum} (key ${item.key})`;
+        ? `Finals — ${item.finalsSlot} — ${matchup}`
+        : `Round ${item.roundNum}, Court ${item.courtNum} — ${matchup}`;
       const winnerField = item.mode === 'finals' ? `
         <div class="field-row">
           <label>Winner</label>
           <select id="winner-${item.id}">
-            <option value="A" ${item.extracted.winner === 'A' ? 'selected' : ''}>Team A</option>
-            <option value="B" ${item.extracted.winner === 'B' ? 'selected' : ''}>Team B</option>
+            <option value="A" ${item.extracted.winner === 'A' ? 'selected' : ''}>${teamA}</option>
+            <option value="B" ${item.extracted.winner === 'B' ? 'selected' : ''}>${teamB}</option>
           </select>
         </div>` : '';
       return `
@@ -81,10 +84,10 @@
           <div>
             <div class="review-meta">${label} &middot; submitted ${new Date(item.createdAt).toLocaleString()}</div>
             <div class="field-grid">
-              <div class="field-row"><label>Sets A</label><input type="number" step="0.5" id="setsA-${item.id}" value="${item.extracted.setsA}"></div>
-              <div class="field-row"><label>Sets B</label><input type="number" step="0.5" id="setsB-${item.id}" value="${item.extracted.setsB}"></div>
-              <div class="field-row"><label>Games A</label><input type="number" id="gamesA-${item.id}" value="${item.extracted.gamesA}"></div>
-              <div class="field-row"><label>Games B</label><input type="number" id="gamesB-${item.id}" value="${item.extracted.gamesB}"></div>
+              <div class="field-row"><label>Sets — ${teamA}</label><input type="number" step="0.5" id="setsA-${item.id}" value="${item.extracted.setsA}"></div>
+              <div class="field-row"><label>Sets — ${teamB}</label><input type="number" step="0.5" id="setsB-${item.id}" value="${item.extracted.setsB}"></div>
+              <div class="field-row"><label>Games — ${teamA}</label><input type="number" id="gamesA-${item.id}" value="${item.extracted.gamesA}"></div>
+              <div class="field-row"><label>Games — ${teamB}</label><input type="number" id="gamesB-${item.id}" value="${item.extracted.gamesB}"></div>
             </div>
             ${winnerField}
             <div class="review-actions">
