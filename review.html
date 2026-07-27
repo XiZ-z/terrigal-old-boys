@@ -92,14 +92,25 @@
     authStatus.textContent = 'Wrong password.';
   }
 
+  // Reads a fetch response as text first, then tries to parse it as JSON --
+  // shows the *raw* body on failure (which reveals the real error, e.g. a
+  // Netlify platform crash shape or a non-JSON error page) rather than a
+  // dead-end "unknown error" that hides whatever actually went wrong.
+  async function parseOrRawText(res) {
+    const text = await res.text();
+    try { return { data: JSON.parse(text), raw: text }; }
+    catch { return { data: null, raw: text }; }
+  }
+
   async function loadPending() {
     const res = await fetch('/.netlify/functions/list-pending', { headers: authHeader() });
     if (res.status === 401) { handleAuthFailure(); return; }
-    const data = await res.json();
+    const { data, raw } = await parseOrRawText(res);
     authGate.style.display = 'none';
     tabsWrap.style.display = '';
     if (!res.ok) {
-      reviewList.innerHTML = `<p class="empty-note">Couldn't load pending submissions: ${data.error || 'unknown error'}. Try refreshing.</p>`;
+      const detail = (data && (data.error || data.errorMessage)) || raw;
+      reviewList.innerHTML = `<p class="empty-note">Couldn't load pending submissions (HTTP ${res.status}): ${detail}</p>`;
       return;
     }
     renderList(data.items);
@@ -109,9 +120,10 @@
     archiveList.innerHTML = '<p class="empty-note">Loading…</p>';
     const res = await fetch('/.netlify/functions/list-approved', { headers: authHeader() });
     if (res.status === 401) { handleAuthFailure(); return; }
-    const data = await res.json();
+    const { data, raw } = await parseOrRawText(res);
     if (!res.ok) {
-      archiveList.innerHTML = `<p class="empty-note">Couldn't load the archive: ${data.error || 'unknown error'}. Try refreshing.</p>`;
+      const detail = (data && (data.error || data.errorMessage)) || raw;
+      archiveList.innerHTML = `<p class="empty-note">Couldn't load the archive (HTTP ${res.status}): ${detail}</p>`;
       return;
     }
     archiveLoaded = true;
