@@ -277,6 +277,35 @@
     });
   }
 
+  // Modern phone photos are often 3-8MB, which can exceed Netlify's request
+  // size limit outright -- but reading handwritten totals off a sheet needs
+  // nowhere near that resolution. Resizing to a max 1600px edge and
+  // re-encoding as JPEG keeps all the detail that actually matters (for
+  // both the AI read and Ash eyeballing it later) while cutting file size
+  // dramatically. This also sidesteps HEIC (iPhone's default format, which
+  // some tools don't handle) by always re-encoding to plain JPEG.
+  function compressImage(file, maxDim = 1600, quality = 0.85) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) { height = Math.round(height * (maxDim / width)); width = maxDim; }
+          else { width = Math.round(width * (maxDim / height)); height = maxDim; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Compression produced no blob')), 'image/jpeg', quality);
+      };
+      img.onerror = () => reject(new Error('Could not load image for compression'));
+      img.src = url;
+    });
+  }
+
   const form = document.getElementById('upload-form');
   const status = document.getElementById('status');
 
@@ -297,8 +326,16 @@
         const file = photoInput.files[0];
         if (!file) { submitBtn.disabled = false; return; }
         status.textContent = 'Reading photo, this can take a few seconds…';
-        const photoBase64 = await fileToBase64(file);
-        payload = { mode, mediaType: file.type, photoBase64 };
+        let photoBlob = file, mediaType = file.type;
+        try {
+          photoBlob = await compressImage(file);
+          mediaType = 'image/jpeg';
+        } catch {
+          // Compression failing shouldn't block a submission -- worst case
+          // it goes through at full size, same as before this existed.
+        }
+        const photoBase64 = await fileToBase64(photoBlob);
+        payload = { mode, mediaType, photoBase64 };
         if (mode === 'weekly') {
           payload.roundNum = Number(roundSelect.value);
           payload.courtNum = Number(courtSelect.value);
