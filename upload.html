@@ -83,6 +83,7 @@
             </select>
           </div>
         </div>
+        <div id="wet-already-reported-note" class="note-box" style="display:none;"></div>
       </div>
 
       <div id="matchup-preview" class="review-meta"></div>
@@ -155,7 +156,38 @@
   const wetModeFinalsBtn = document.getElementById('wet-mode-finals');
   const wetWeeklyFields = document.getElementById('wet-weekly-fields');
   const wetFinalsFields = document.getElementById('wet-finals-fields');
+  const wetAlreadyReportedNote = document.getElementById('wet-already-reported-note');
   let wetSubMode = 'weekly';
+
+  // Warns if the selected round/stage has already been confirmed WET.
+  // Only checks already-*approved* data (WET_ROUNDS / FINALS_WET_WEEKS),
+  // since this page has no login and can't see other pending submissions
+  // still awaiting Ash's review -- those duplicates get flagged for him
+  // on the review page instead.
+  function updateWetAlreadyReportedNote() {
+    if (wetSubMode === 'weekly') {
+      const roundNum = Number(wetRoundSelect.value);
+      if (WET_ROUNDS.hasOwnProperty(roundNum)) {
+        const replay = WET_ROUNDS[roundNum];
+        wetAlreadyReportedNote.innerHTML = `<span class="pill wet">Already reported</span> <span>Round ${roundNum} is already marked WET${replay ? ` (replay ${replay})` : ' (no replay)'}. Still fine to submit again if this is a new/different postponement.</span>`;
+        wetAlreadyReportedNote.style.display = 'flex';
+      } else {
+        wetAlreadyReportedNote.style.display = 'none';
+      }
+    } else {
+      const stage = wetFinalsStageSelect.value;
+      // Check this stage's OWN wet count, not its cascaded/displayed date --
+      // semis' date shifts if elimination was wet, but that doesn't mean
+      // semis itself has ever been reported.
+      if (FINALS_WET_WEEKS[stage] > 0) {
+        const info = getFinalsDates()[stage];
+        wetAlreadyReportedNote.innerHTML = `<span class="pill wet">Already reported</span> <span>${FINALS_STAGE_LABELS[stage]} has already been reported WET (now scheduled ${info.date}). Still fine to submit again if it's wet again.</span>`;
+        wetAlreadyReportedNote.style.display = 'flex';
+      } else {
+        wetAlreadyReportedNote.style.display = 'none';
+      }
+    }
+  }
 
   function setWetSubMode(newSubMode) {
     wetSubMode = newSubMode;
@@ -163,9 +195,12 @@
     wetModeFinalsBtn.classList.toggle('active', wetSubMode === 'finals');
     wetWeeklyFields.style.display = wetSubMode === 'weekly' ? '' : 'none';
     wetFinalsFields.style.display = wetSubMode === 'finals' ? '' : 'none';
+    updateWetAlreadyReportedNote();
   }
   wetModeWeeklyBtn.addEventListener('click', () => setWetSubMode('weekly'));
   wetModeFinalsBtn.addEventListener('click', () => setWetSubMode('finals'));
+  wetRoundSelect.addEventListener('change', updateWetAlreadyReportedNote);
+  wetFinalsStageSelect.addEventListener('change', updateWetAlreadyReportedNote);
 
   // Shows which real teams a round+court or finals slot resolves to, so
   // whoever's uploading can confirm they picked the right match before
@@ -211,6 +246,7 @@
     photoInput.required = mode !== 'wet';
     submitBtn.textContent = mode === 'wet' ? 'Report as WET' : 'Submit for review';
     updateMatchupPreview();
+    if (mode === 'wet') updateWetAlreadyReportedNote();
   }
 
   roundSelect.addEventListener('change', updateMatchupPreview);
