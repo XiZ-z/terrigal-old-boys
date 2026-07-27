@@ -333,10 +333,18 @@
     document.getElementById('photo-lightbox').classList.add('show');
   }
 
+  // Disables both buttons on this item's card while a request is in
+  // flight, so a rapid double-click can't fire two approve/reject calls
+  // for the same id before the first one lands.
+  function setItemButtonsDisabled(id, disabled) {
+    document.querySelectorAll(`[data-id="${id}"] .review-actions button`).forEach(btn => { btn.disabled = disabled; });
+  }
+
   async function approve(id) {
     const statusEl = document.getElementById(`status-${id}`);
     statusEl.className = 'status-msg';
     statusEl.textContent = 'Publishing…';
+    setItemButtonsDisabled(id, true);
 
     const setsAEl = document.getElementById(`setsA-${id}`);
     const body = setsAEl ? {
@@ -349,28 +357,53 @@
     const winnerEl = document.getElementById(`winner-${id}`);
     if (winnerEl) body.winner = winnerEl.value;
 
-    const res = await fetch('/.netlify/functions/approve-sheet', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', ...authHeader() },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
-    if (!res.ok) {
+    try {
+      const res = await fetch('/.netlify/functions/approve-sheet', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...authHeader() },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        statusEl.className = 'status-msg error';
+        statusEl.textContent = data.error || 'Failed to publish.';
+        setItemButtonsDisabled(id, false);
+        return;
+      }
+      archiveLoaded = false; // this approval added a new archive entry -- refetch next time that tab opens
+      loadPending();
+    } catch {
       statusEl.className = 'status-msg error';
-      statusEl.textContent = data.error || 'Failed to publish.';
-      return;
+      statusEl.textContent = 'Network error -- check your connection and try again.';
+      setItemButtonsDisabled(id, false);
     }
-    archiveLoaded = false; // this approval added a new archive entry -- refetch next time that tab opens
-    loadPending();
   }
 
   async function reject(id) {
-    await fetch('/.netlify/functions/reject-sheet', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', ...authHeader() },
-      body: JSON.stringify({ id }),
-    });
-    loadPending();
+    const statusEl = document.getElementById(`status-${id}`);
+    statusEl.className = 'status-msg';
+    statusEl.textContent = 'Rejecting…';
+    setItemButtonsDisabled(id, true);
+
+    try {
+      const res = await fetch('/.netlify/functions/reject-sheet', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...authHeader() },
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        statusEl.className = 'status-msg error';
+        statusEl.textContent = data.error || 'Failed to reject -- try again.';
+        setItemButtonsDisabled(id, false);
+        return;
+      }
+      loadPending();
+    } catch {
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'Network error -- check your connection and try again.';
+      setItemButtonsDisabled(id, false);
+    }
   }
 
   document.getElementById('unlock-btn').addEventListener('click', () => {
