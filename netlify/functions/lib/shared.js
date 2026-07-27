@@ -1,5 +1,6 @@
 // Shared helpers for the score-sheet upload/review functions.
 const { getStore } = require('@netlify/blobs');
+const { ALL_ROUNDS, computeFinalsState } = require('../../../data.js');
 
 const STORE_NAME = 'sheets';
 
@@ -33,6 +34,26 @@ function json(statusCode, body) {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   };
+}
+
+// Real team numbers for a pending/approved record, so the reviewer/archive
+// sees "Team 3 v Team 6" instead of generic A/B sides. Weekly pairings are
+// a fixed schedule (ALL_ROUNDS), so this is always accurate. Finals
+// pairings for game1-3 come from ladder seeding and are resolvable as soon
+// as there are enough weekly results in; semis/final additionally need the
+// earlier finals matches approved, so those resolve to null until then.
+// Uses whatever data.js was last deployed here, so it can lag behind
+// dev's live results for finals specifically -- fine for now since finals
+// are months away.
+function resolveTeams(record) {
+  if (record.mode === 'weekly') {
+    const slot = Number(record.key.split('-')[1]);
+    const [teamA, teamB] = ALL_ROUNDS[record.roundNum - 1][slot];
+    return { teamA, teamB };
+  }
+  const state = computeFinalsState();
+  const slotInfo = state[record.finalsSlot];
+  return slotInfo ? { teamA: slotInfo.teamA, teamB: slotInfo.teamB } : { teamA: null, teamB: null };
 }
 
 // submit-sheet has no login (the review/approve step is the real gate), but
@@ -215,7 +236,7 @@ Respond with ONLY a single JSON object, no other text, no markdown code fences, 
 }
 
 module.exports = {
-  sheetsStore, isAuthed, json,
+  sheetsStore, isAuthed, json, resolveTeams,
   getDataJs, putDataJs, upsertEntry, upsertWetRound, upsertFinalsWetWeek,
   readScoreSheet, checkRateLimit,
 };

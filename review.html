@@ -27,7 +27,14 @@
     <div id="auth-status" class="status-msg error"></div>
   </div>
 
-  <div id="review-list" style="display:none;"></div>
+  <div id="tabs-wrap" style="display:none;">
+    <div class="mode-toggle">
+      <button type="button" id="tab-pending" class="active">Pending Review</button>
+      <button type="button" id="tab-archive">Archive</button>
+    </div>
+    <div id="review-list"></div>
+    <div id="archive-list" style="display:none;"></div>
+  </div>
 </main>
 
 <div id="photo-lightbox" class="photo-lightbox" onclick="this.classList.remove('show')">
@@ -39,25 +46,56 @@
 <script src="nav.js"></script>
 <script>
   const authGate = document.getElementById('auth-gate');
+  const tabsWrap = document.getElementById('tabs-wrap');
   const reviewList = document.getElementById('review-list');
+  const archiveList = document.getElementById('archive-list');
   const authStatus = document.getElementById('auth-status');
+  const tabPendingBtn = document.getElementById('tab-pending');
+  const tabArchiveBtn = document.getElementById('tab-archive');
+  let archiveLoaded = false;
 
   function authHeader() {
     return { 'authorization': `Bearer ${sessionStorage.getItem('reviewPassword') || ''}` };
   }
 
+  function handleAuthFailure() {
+    sessionStorage.removeItem('reviewPassword');
+    authGate.style.display = '';
+    tabsWrap.style.display = 'none';
+    authStatus.textContent = 'Wrong password.';
+  }
+
   async function loadPending() {
     const res = await fetch('/.netlify/functions/list-pending', { headers: authHeader() });
-    if (res.status === 401) {
-      sessionStorage.removeItem('reviewPassword');
-      authGate.style.display = '';
-      reviewList.style.display = 'none';
-      authStatus.textContent = 'Wrong password.';
-      return;
-    }
+    if (res.status === 401) { handleAuthFailure(); return; }
     const data = await res.json();
+    authGate.style.display = 'none';
+    tabsWrap.style.display = '';
     renderList(data.items);
   }
+
+  async function loadArchive() {
+    archiveList.innerHTML = '<p class="empty-note">Loading…</p>';
+    const res = await fetch('/.netlify/functions/list-approved', { headers: authHeader() });
+    if (res.status === 401) { handleAuthFailure(); return; }
+    const data = await res.json();
+    archiveLoaded = true;
+    renderArchiveList(data.items);
+  }
+
+  tabPendingBtn.addEventListener('click', () => {
+    tabPendingBtn.classList.add('active');
+    tabArchiveBtn.classList.remove('active');
+    reviewList.style.display = '';
+    archiveList.style.display = 'none';
+  });
+  tabArchiveBtn.addEventListener('click', () => {
+    tabArchiveBtn.classList.add('active');
+    tabPendingBtn.classList.remove('active');
+    reviewList.style.display = 'none';
+    archiveList.style.display = '';
+    if (!archiveLoaded) loadArchive();
+  });
 
   function renderList(items) {
     authGate.style.display = 'none';
@@ -137,6 +175,51 @@
     }).join('');
   }
 
+  const FINALS_STAGE_LABELS_ARCHIVE = { elimination: 'Elimination', semis: 'Semi Finals', grandFinal: 'Grand Final' };
+
+  function renderArchiveList(items) {
+    if (items.length === 0) {
+      archiveList.innerHTML = '<p class="empty-note">Nothing approved yet.</p>';
+      return;
+    }
+
+    archiveList.innerHTML = items.map(item => {
+      const approvedWhen = item.approvedAt ? new Date(item.approvedAt).toLocaleString() : '';
+
+      if (item.wet && item.mode === 'finals') {
+        const stageLabel = FINALS_STAGE_LABELS_ARCHIVE[item.finalsStage] || item.finalsStage;
+        return `
+          <div class="review-item" style="grid-template-columns:1fr;">
+            <div class="review-meta"><span class="pill wet">WET</span>&nbsp; ${stageLabel} marked postponed &middot; approved ${approvedWhen}</div>
+          </div>`;
+      }
+      if (item.wet) {
+        return `
+          <div class="review-item" style="grid-template-columns:1fr;">
+            <div class="review-meta"><span class="pill wet">WET</span>&nbsp; Round ${item.roundNum} marked postponed &middot; approved ${approvedWhen}</div>
+          </div>`;
+      }
+
+      const teamA = item.teamA ? `Team ${item.teamA}` : 'Team A';
+      const teamB = item.teamB ? `Team ${item.teamB}` : 'Team B';
+      const matchup = `${teamA} v ${teamB}`;
+      const label = item.mode === 'finals'
+        ? `Finals — ${item.finalsSlot} — ${matchup}`
+        : `Round ${item.roundNum}, Court ${item.courtNum} — ${matchup}`;
+      const r = item.approved || item.extracted;
+      const winnerNote = r.winner ? ` &middot; Winner: ${r.winner === 'A' ? teamA : teamB}` : '';
+
+      return `
+        <div class="review-item">
+          <img src="${item.photoDataUrl}" alt="Score sheet photo" style="cursor:zoom-in;" onclick="openLightbox(this.src)">
+          <div>
+            <div class="review-meta">${label} &middot; approved ${approvedWhen}</div>
+            <div class="review-meta mono">${r.setsA}&ndash;${r.setsB} sets &middot; ${r.gamesA}&ndash;${r.gamesB} games${winnerNote}</div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
   function openLightbox(src) {
     document.getElementById('photo-lightbox-img').src = src;
     document.getElementById('photo-lightbox').classList.add('show');
@@ -169,6 +252,7 @@
       statusEl.textContent = data.error || 'Failed to publish.';
       return;
     }
+    archiveLoaded = false; // this approval added a new archive entry -- refetch next time that tab opens
     loadPending();
   }
 
