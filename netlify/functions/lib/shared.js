@@ -151,6 +151,28 @@ function upsertWetRound(content, roundNum, reserveDates) {
   return content.slice(0, bodyStart) + body + content.slice(endIdx);
 }
 
+// Bumps one finals stage's wet count in FINALS_WET_WEEKS by 1 -- unlike a
+// wet weekly round, a wet finals night has no reserve week, it just pushes
+// that stage (and everything after it, via getFinalsDates()'s cascade) to
+// the following Wednesday.
+function upsertFinalsWetWeek(content, stage) {
+  const startMarker = 'const FINALS_WET_WEEKS = {';
+  const startIdx = content.indexOf(startMarker);
+  if (startIdx === -1) throw new Error('FINALS_WET_WEEKS not found in data.js');
+  const bodyStart = startIdx + startMarker.length;
+  const endIdx = content.indexOf('\n};', bodyStart);
+  if (endIdx === -1) throw new Error('FINALS_WET_WEEKS closing not found');
+
+  let body = content.slice(bodyStart, endIdx);
+  const lineRe = new RegExp(`\\n(\\s*)${stage}\\s*:\\s*(\\d+)\\s*,?`);
+  const match = body.match(lineRe);
+  const current = match ? Number(match[2]) : 0;
+  const newLine = `\n  ${stage}: ${current + 1},`;
+  body = lineRe.test(body) ? body.replace(lineRe, newLine) : body + newLine;
+
+  return content.slice(0, bodyStart) + body + content.slice(endIdx);
+}
+
 // ---------- Anthropic vision read of the score sheet photo ----------
 async function readScoreSheet(base64Data, mediaType, isFinals) {
   const finalsNote = isFinals
@@ -194,6 +216,6 @@ Respond with ONLY a single JSON object, no other text, no markdown code fences, 
 
 module.exports = {
   sheetsStore, isAuthed, json,
-  getDataJs, putDataJs, upsertEntry, upsertWetRound,
+  getDataJs, putDataJs, upsertEntry, upsertWetRound, upsertFinalsWetWeek,
   readScoreSheet, checkRateLimit,
 };

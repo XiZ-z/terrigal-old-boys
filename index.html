@@ -63,10 +63,13 @@
 
 <script src="data.js"></script>
 <script>
+  // Dates pulled live from getFinalsDates() (not the static FINALS_DATES)
+  // so a wet-postponed stage shows its actual pushed-back date here too.
+  const finalsDates = getFinalsDates();
   const FINALS_STAGE_META = {
-    elimination: { title: 'Elimination Finals', date: FINALS_DATES.elimination, slots: [['G1', 'game1'], ['G2', 'game2'], ['G3', 'game3']] },
-    semis:       { title: 'Semi Finals',        date: FINALS_DATES.semis,       slots: [['S1', 'semi1'], ['S2', 'semi2']] },
-    final:       { title: 'Grand Final',        date: FINALS_DATES.grandFinal,  slots: [['F', 'final']] },
+    elimination: { title: 'Elimination Finals', date: finalsDates.elimination.date, wet: finalsDates.elimination.weeksDelayed > 0, slots: [['G1', 'game1'], ['G2', 'game2'], ['G3', 'game3']] },
+    semis:       { title: 'Semi Finals',        date: finalsDates.semis.date,       wet: finalsDates.semis.weeksDelayed > 0,       slots: [['S1', 'semi1'], ['S2', 'semi2']] },
+    final:       { title: 'Grand Final',        date: finalsDates.grandFinal.date,  wet: finalsDates.grandFinal.weeksDelayed > 0,  slots: [['F', 'final']] },
   };
 
   function renderHomeNext(){
@@ -113,7 +116,8 @@
 
     scorecard.dataset.eyebrow = 'FINALS';
     document.getElementById('next-round-title').textContent = meta.title;
-    document.getElementById('next-round-date').textContent = `Wednesday, ${meta.date}`;
+    const wetPill = meta.wet ? ` <span class="pill wet">WET &middot; pushed back</span>` : '';
+    document.getElementById('next-round-date').innerHTML = `Wednesday, ${meta.date}${wetPill}`;
     document.getElementById('home-next-matches').innerHTML = meta.slots.map(([tag, slot]) => {
       const s = state[slot];
       const label = s ? `Team ${s.teamA} v Team ${s.teamB}` : 'To be decided';

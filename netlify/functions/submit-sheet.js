@@ -6,6 +6,7 @@ const { slotForCourt } = require('../../data.js');
 const { sheetsStore, json, readScoreSheet, checkRateLimit } = require('./lib/shared');
 
 const FINALS_SLOTS = ['game1', 'game2', 'game3', 'semi1', 'semi2', 'final'];
+const FINALS_STAGES = ['elimination', 'semis', 'grandFinal'];
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
@@ -24,7 +25,7 @@ exports.handler = async (event) => {
 
   const { mode, mediaType, photoBase64 } = payload;
 
-  // A wet-round report has no photo to read -- just flags a round as
+  // A wet report has no photo to read -- just flags a round/finals stage as
   // postponed for Ash to approve, which then auto-assigns the replay date.
   if (mode === 'weekly' && payload.wet === true) {
     const roundNum = Number(payload.roundNum);
@@ -37,6 +38,16 @@ exports.handler = async (event) => {
       createdAt: new Date().toISOString(),
     });
     return json(200, { ok: true, id, wet: true, roundNum });
+  }
+  if (mode === 'finals' && payload.wet === true) {
+    const finalsStage = payload.finalsStage;
+    if (!FINALS_STAGES.includes(finalsStage)) return json(400, { error: 'Invalid finals stage' });
+    const id = randomUUID();
+    await store.setJSON(`pending/${id}.json`, {
+      id, mode: 'finals', wet: true, finalsStage,
+      createdAt: new Date().toISOString(),
+    });
+    return json(200, { ok: true, id, wet: true, finalsStage });
   }
 
   if (!photoBase64 || !mediaType) return json(400, { error: 'Missing photo' });

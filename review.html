@@ -68,7 +68,24 @@
       return;
     }
 
+    const FINALS_STAGE_LABELS = { elimination: 'Elimination', semis: 'Semi Finals', grandFinal: 'Grand Final' };
+
     reviewList.innerHTML = items.map(item => {
+      if (item.wet && item.mode === 'finals') {
+        const stageLabel = FINALS_STAGE_LABELS[item.finalsStage] || item.finalsStage;
+        return `
+          <div class="review-item" data-id="${item.id}" style="grid-template-columns:1fr;">
+            <div>
+              <div class="review-meta"><span class="pill wet">WET</span>&nbsp; ${stageLabel} reported postponed &middot; submitted ${new Date(item.createdAt).toLocaleString()}</div>
+              <p class="section-sub" style="margin:8px 0;">Approving will push ${stageLabel} (and every finals stage after it) back one week to the following Wednesday.</p>
+              <div class="review-actions">
+                <button class="btn btn-primary" onclick="approve('${item.id}')">Approve</button>
+                <button class="btn btn-reject" onclick="reject('${item.id}')">Reject</button>
+              </div>
+              <div class="status-msg" id="status-${item.id}"></div>
+            </div>
+          </div>`;
+      }
       if (item.wet) {
         return `
           <div class="review-item" data-id="${item.id}" style="grid-template-columns:1fr;">

@@ -3,7 +3,7 @@
 // Contents API, then archives the pending record (kept, not deleted, as an
 // audit trail).
 const { RESERVE_DATES } = require('../../data.js');
-const { sheetsStore, isAuthed, json, getDataJs, putDataJs, upsertEntry, upsertWetRound } = require('./lib/shared');
+const { sheetsStore, isAuthed, json, getDataJs, putDataJs, upsertEntry, upsertWetRound, upsertFinalsWetWeek } = require('./lib/shared');
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
@@ -20,6 +20,16 @@ exports.handler = async (event) => {
   const store = sheetsStore();
   const record = await store.get(`pending/${id}.json`, { type: 'json' });
   if (!record) return json(404, { error: 'Pending submission not found' });
+
+  if (record.wet && record.mode === 'finals') {
+    const { content, sha } = await getDataJs();
+    const newContent = upsertFinalsWetWeek(content, record.finalsStage);
+    await putDataJs(newContent, sha, `Push ${record.finalsStage} back a week for wet weather (approved via review)`);
+
+    await store.setJSON(`approved/${id}.json`, { ...record, approvedAt: new Date().toISOString() });
+    await store.delete(`pending/${id}.json`);
+    return json(200, { ok: true, key: `wet-finals-${record.finalsStage}` });
+  }
 
   if (record.wet) {
     const { content, sha } = await getDataJs();

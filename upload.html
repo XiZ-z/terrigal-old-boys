@@ -62,12 +62,26 @@
       </div>
 
       <div id="wet-fields" style="display:none;">
-        <p class="section-sub" style="margin-top:0;">Rained out before a round could be played? Report it here — once approved, it's marked postponed and a replay date gets assigned automatically (no photo needed).</p>
-        <div class="field-row">
-          <label for="wet-round-num">Round</label>
-          <select id="wet-round-num" name="wetRoundNum">
-            <!-- populated by script -->
-          </select>
+        <p class="section-sub" style="margin-top:0;">Rained out before a round or finals night could be played? Report it here — no photo needed. Once approved, a weekly round gets a replay date assigned automatically; a finals night just pushes straight to the following Wednesday.</p>
+        <div class="mode-toggle" style="margin-bottom:14px;">
+          <button type="button" id="wet-mode-weekly" class="active">Weekly round</button>
+          <button type="button" id="wet-mode-finals">Finals stage</button>
+        </div>
+        <div id="wet-weekly-fields">
+          <div class="field-row">
+            <label for="wet-round-num">Round</label>
+            <select id="wet-round-num" name="wetRoundNum">
+              <!-- populated by script -->
+            </select>
+          </div>
+        </div>
+        <div id="wet-finals-fields" style="display:none;">
+          <div class="field-row">
+            <label for="wet-finals-stage">Finals stage</label>
+            <select id="wet-finals-stage" name="wetFinalsStage">
+              <!-- populated by script -->
+            </select>
+          </div>
         </div>
       </div>
 
@@ -112,6 +126,17 @@
     });
   }
 
+  const FINALS_STAGE_LABELS = { elimination: 'Elimination', semis: 'Semi Finals', grandFinal: 'Grand Final' };
+  const wetFinalsStageSelect = document.getElementById('wet-finals-stage');
+  const finalsDates = getFinalsDates();
+  Object.keys(FINALS_STAGE_LABELS).forEach(stage => {
+    const opt = document.createElement('option');
+    opt.value = stage;
+    const wetNote = finalsDates[stage].weeksDelayed > 0 ? ' ☔ already pushed back' : '';
+    opt.textContent = `${FINALS_STAGE_LABELS[stage]} — ${finalsDates[stage].date}${wetNote}`;
+    wetFinalsStageSelect.appendChild(opt);
+  });
+
   const modeWeeklyBtn = document.getElementById('mode-weekly');
   const modeFinalsBtn = document.getElementById('mode-finals');
   const modeWetBtn = document.getElementById('mode-wet');
@@ -125,6 +150,22 @@
   const finalsSlotSelect = document.getElementById('finals-slot');
   const submitBtn = document.getElementById('submit-btn');
   let mode = 'weekly';
+
+  const wetModeWeeklyBtn = document.getElementById('wet-mode-weekly');
+  const wetModeFinalsBtn = document.getElementById('wet-mode-finals');
+  const wetWeeklyFields = document.getElementById('wet-weekly-fields');
+  const wetFinalsFields = document.getElementById('wet-finals-fields');
+  let wetSubMode = 'weekly';
+
+  function setWetSubMode(newSubMode) {
+    wetSubMode = newSubMode;
+    wetModeWeeklyBtn.classList.toggle('active', wetSubMode === 'weekly');
+    wetModeFinalsBtn.classList.toggle('active', wetSubMode === 'finals');
+    wetWeeklyFields.style.display = wetSubMode === 'weekly' ? '' : 'none';
+    wetFinalsFields.style.display = wetSubMode === 'finals' ? '' : 'none';
+  }
+  wetModeWeeklyBtn.addEventListener('click', () => setWetSubMode('weekly'));
+  wetModeFinalsBtn.addEventListener('click', () => setWetSubMode('finals'));
 
   // Shows which real teams a round+court or finals slot resolves to, so
   // whoever's uploading can confirm they picked the right match before
@@ -203,7 +244,9 @@
       let payload;
       if (mode === 'wet') {
         status.textContent = 'Submitting…';
-        payload = { mode: 'weekly', wet: true, roundNum: Number(wetRoundSelect.value) };
+        payload = wetSubMode === 'weekly'
+          ? { mode: 'weekly', wet: true, roundNum: Number(wetRoundSelect.value) }
+          : { mode: 'finals', wet: true, finalsStage: wetFinalsStageSelect.value };
       } else {
         const file = photoInput.files[0];
         if (!file) { submitBtn.disabled = false; return; }
@@ -230,9 +273,13 @@
         status.textContent = data.error || 'Something went wrong submitting this.';
       } else {
         status.className = 'status-msg success';
-        status.textContent = mode === 'wet'
-          ? `Reported Round ${payload.roundNum} as WET. Awaiting approval before it's marked postponed.`
-          : `Submitted — read as ${data.extracted.setsA}–${data.extracted.setsB} sets, ${data.extracted.gamesA}–${data.extracted.gamesB} games. Awaiting approval before it goes live.`;
+        if (mode === 'wet' && wetSubMode === 'weekly') {
+          status.textContent = `Reported Round ${payload.roundNum} as WET. Awaiting approval before it's marked postponed.`;
+        } else if (mode === 'wet') {
+          status.textContent = `Reported ${FINALS_STAGE_LABELS[payload.finalsStage]} as WET. Awaiting approval before it's pushed back a week.`;
+        } else {
+          status.textContent = `Submitted — read as ${data.extracted.setsA}–${data.extracted.setsB} sets, ${data.extracted.gamesA}–${data.extracted.gamesB} games. Awaiting approval before it goes live.`;
+        }
         form.reset();
         setMode(mode);
       }

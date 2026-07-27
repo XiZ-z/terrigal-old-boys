@@ -41,6 +41,41 @@ const FINALS_DATES = {
   grandFinal: "9 Dec 2026",
 };
 
+// Unlike the round robin's fixed reserve weeks, a wet finals night just
+// pushes straight to the following Wednesday -- so this counts how many
+// times each stage has itself been wet, and getFinalsDates() below cascades
+// that forward onto every later stage too, since finals nights are played
+// in strict sequence. A stage's own count is frozen once real results are
+// entered for it, so a later stage going wet doesn't retroactively change
+// an earlier (already-played) stage's displayed date.
+const FINALS_WET_WEEKS = {
+  elimination: 0,
+  semis: 0,
+  grandFinal: 0,
+};
+const FINALS_STAGE_ORDER = ['elimination', 'semis', 'grandFinal'];
+
+function addWeeks(dateStr, weeks){
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + weeks * 7);
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// Effective date for each finals stage, accounting for wet postponements.
+// Returns { elimination, semis, grandFinal }, each { date, weeksDelayed }.
+function getFinalsDates(){
+  let cumulative = 0;
+  const result = {};
+  FINALS_STAGE_ORDER.forEach(stage => {
+    cumulative += FINALS_WET_WEEKS[stage] || 0;
+    result[stage] = {
+      date: cumulative > 0 ? addWeeks(FINALS_DATES[stage], cumulative) : FINALS_DATES[stage],
+      weeksDelayed: cumulative,
+    };
+  });
+  return result;
+}
+
 // ---------- Weekly results ----------
 // Add one line here per court per week, once that court's paper score sheet
 // has been scanned in and read back. Key is "roundNumber-pairingSlot" (0-3)
@@ -331,6 +366,7 @@ function computeFinalsState(){
 if (typeof module !== 'undefined') {
   module.exports = {
     BASE_ROUNDS, ALL_ROUNDS, DATES, RESERVE_DATES, WET_ROUNDS, FINALS_DATES,
+    FINALS_WET_WEEKS, FINALS_STAGE_ORDER, getFinalsDates,
     RESULTS, FINALS_RESULTS,
     displayCourt, slotForCourt, matchPoints,
     headToHeadStats, headToHeadCompare, computeLadder,
