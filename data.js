@@ -33,6 +33,7 @@ const WET_ROUNDS = {
   5: "11 Nov 2026",
   9: "18 Nov 2026",
   12: null,
+  6: null,
 };
 
 const FINALS_DATES = {
