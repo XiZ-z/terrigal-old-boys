@@ -98,6 +98,10 @@
     const data = await res.json();
     authGate.style.display = 'none';
     tabsWrap.style.display = '';
+    if (!res.ok) {
+      reviewList.innerHTML = `<p class="empty-note">Couldn't load pending submissions: ${data.error || 'unknown error'}. Try refreshing.</p>`;
+      return;
+    }
     renderList(data.items);
   }
 
@@ -106,6 +110,10 @@
     const res = await fetch('/.netlify/functions/list-approved', { headers: authHeader() });
     if (res.status === 401) { handleAuthFailure(); return; }
     const data = await res.json();
+    if (!res.ok) {
+      archiveList.innerHTML = `<p class="empty-note">Couldn't load the archive: ${data.error || 'unknown error'}. Try refreshing.</p>`;
+      return;
+    }
     archiveLoaded = true;
     archiveItems = data.items;
     applyArchiveFilters();
