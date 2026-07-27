@@ -241,13 +241,7 @@ function getRoundsPlayed(){
 // and games after bonus points is settled by a tiebreaker set that isn't
 // otherwise captured in those four numbers (finals only).
 const FINALS_RESULTS = {
-  // Sample data for dev preview only -- pretends Games 1-3 and Semi 1 have
-  // been played, with Semi 2 resolved (teams known) but not yet played,
-  // and the Grand Final still awaiting Semi 2. Cleared before real finals.
-  game1: { setsA: 4,   setsB: 2,   gamesA: 27, gamesB: 21, winner: 'A' },
-  game2: { setsA: 2,   setsB: 4,   gamesA: 20, gamesB: 28, winner: 'B' },
-  game3: { setsA: 3.5, setsB: 2.5, gamesA: 25, gamesB: 23, winner: 'A' },
-  semi1: { setsA: 4.5, setsB: 1.5, gamesA: 28, gamesB: 20, winner: 'A' },
+  // Cleared for the real season -- add real results here once played.
 };
 
 // Resolves each bracket slot's actual teams (from ladder seeding and prior
