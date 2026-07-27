@@ -15,7 +15,10 @@
 <main>
   <div class="section-title">Upload Score Sheet</div>
   <p class="section-sub">Take a photo of the whole score sheet for your court and submit it here. It'll be read automatically and then double-checked before it goes live — no need to type any numbers in yourself.</p>
-  <p class="section-sub"><span class="pill wet">WET</span>&nbsp; If a round was postponed for wet weather and you're uploading its replay, select that round's <strong>original number</strong> below (not today's date) — it's marked WET in the list so it's easy to spot.</p>
+  <div class="note-box">
+    <span class="pill wet">WET</span>
+    <span>If a round was postponed for wet weather and you're uploading its replay, select that round's <strong>original number</strong> below (not today's date) — it's marked WET in the list so it's easy to spot.</span>
+  </div>
 
   <div class="upload-card">
     <div class="mode-toggle">
@@ -25,22 +28,20 @@
 
     <form id="upload-form">
       <div id="weekly-fields">
-        <div class="field-grid">
-          <div class="field-row">
-            <label for="round-num">Round</label>
-            <select id="round-num" name="roundNum">
-              <!-- populated by script -->
-            </select>
-          </div>
-          <div class="field-row">
-            <label for="court-num">Court</label>
-            <select id="court-num" name="courtNum">
-              <option value="1">Court 1</option>
-              <option value="2">Court 2</option>
-              <option value="3">Court 3</option>
-              <option value="4">Court 4</option>
-            </select>
-          </div>
+        <div class="field-row">
+          <label for="round-num">Round</label>
+          <select id="round-num" name="roundNum">
+            <!-- populated by script -->
+          </select>
+        </div>
+        <div class="field-row">
+          <label for="court-num">Court</label>
+          <select id="court-num" name="courtNum">
+            <option value="1">Court 1</option>
+            <option value="2">Court 2</option>
+            <option value="3">Court 3</option>
+            <option value="4">Court 4</option>
+          </select>
         </div>
       </div>
 

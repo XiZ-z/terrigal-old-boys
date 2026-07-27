@@ -455,6 +455,13 @@ footer{
   padding:22px; margin-bottom:18px;
 }
 .upload-card{max-width:460px;}
+.note-box{
+  display:flex; align-items:flex-start; gap:10px;
+  background:#E7F0F7; border:1px solid #C9DCEA; border-radius:var(--radius);
+  padding:12px 16px; margin-bottom:18px; max-width:460px;
+  font-size:13px; color:var(--ink-soft); line-height:1.5;
+}
+.note-box .pill{flex-shrink:0; margin-top:1px;}
 .auth-card{max-width:360px;}
 .status-msg{margin-top:14px; font-size:13.5px; line-height:1.5;}
 .status-msg.error{color:var(--clay); font-weight:600;}
