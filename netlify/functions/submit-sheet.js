@@ -18,6 +18,23 @@ exports.handler = async (event) => {
   }
 
   const { mode, mediaType, photoBase64 } = payload;
+
+  // A wet-round report has no photo to read -- just flags a round as
+  // postponed for Ash to approve, which then auto-assigns the replay date.
+  if (mode === 'weekly' && payload.wet === true) {
+    const roundNum = Number(payload.roundNum);
+    if (!Number.isInteger(roundNum) || roundNum < 1 || roundNum > 14) {
+      return json(400, { error: 'Invalid round number' });
+    }
+    const id = randomUUID();
+    const store = sheetsStore();
+    await store.setJSON(`pending/${id}.json`, {
+      id, mode: 'weekly', wet: true, roundNum,
+      createdAt: new Date().toISOString(),
+    });
+    return json(200, { ok: true, id, wet: true, roundNum });
+  }
+
   if (!photoBase64 || !mediaType) return json(400, { error: 'Missing photo' });
 
   let blockConst, keyLiteral, key, roundNum = null, courtNum = null, finalsSlot = null;

@@ -99,6 +99,36 @@ function upsertEntry(content, blockConst, keyLiteral, valueLiteral) {
   return content.slice(0, bodyStart) + body + content.slice(endIdx);
 }
 
+// Marks a round postponed in WET_ROUNDS, auto-assigning the correct reserve
+// date per the season's fixed rule: the first wet round of the season gets
+// the first reserve date, the second wet round gets the second, and any
+// further one has nowhere to go and is recorded as still-TBC (null) --
+// mirrors the manual process this replaces. reserveDates is data.js's own
+// RESERVE_DATES, passed in so this stays in sync with the season config.
+function upsertWetRound(content, roundNum, reserveDates) {
+  const startMarker = 'const WET_ROUNDS = {';
+  const startIdx = content.indexOf(startMarker);
+  if (startIdx === -1) throw new Error('WET_ROUNDS not found in data.js');
+  const bodyStart = startIdx + startMarker.length;
+  const endIdx = content.indexOf('\n};', bodyStart);
+  if (endIdx === -1) throw new Error('WET_ROUNDS closing not found');
+
+  let body = content.slice(bodyStart, endIdx);
+
+  // Ignore the commented-out example line when deciding which reserve
+  // date is still free, or it would always look like the first one's
+  // already taken.
+  const activeBody = body.split('\n').filter(l => !l.trim().startsWith('//')).join('\n');
+  const nextDate = reserveDates.find(d => !activeBody.includes(`"${d}"`));
+  const valueLiteral = nextDate ? `"${nextDate}"` : 'null';
+
+  const lineRe = new RegExp(`\\n(?!\\s*//)\\s*${roundNum}\\s*:\\s*(?:"[^"]*"|null)\\s*,?`);
+  const newLine = `\n  ${roundNum}: ${valueLiteral},`;
+  body = lineRe.test(body) ? body.replace(lineRe, newLine) : body + newLine;
+
+  return content.slice(0, bodyStart) + body + content.slice(endIdx);
+}
+
 // ---------- Anthropic vision read of the score sheet photo ----------
 async function readScoreSheet(base64Data, mediaType, isFinals) {
   const finalsNote = isFinals
@@ -142,6 +172,6 @@ Respond with ONLY a single JSON object, no other text, no markdown code fences, 
 
 module.exports = {
   sheetsStore, isAuthed, json,
-  getDataJs, putDataJs, upsertEntry,
+  getDataJs, putDataJs, upsertEntry, upsertWetRound,
   readScoreSheet,
 };

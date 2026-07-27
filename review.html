@@ -68,6 +68,21 @@
     }
 
     reviewList.innerHTML = items.map(item => {
+      if (item.wet) {
+        return `
+          <div class="review-item" data-id="${item.id}" style="grid-template-columns:1fr;">
+            <div>
+              <div class="review-meta"><span class="pill wet">WET</span>&nbsp; Round ${item.roundNum} reported postponed &middot; submitted ${new Date(item.createdAt).toLocaleString()}</div>
+              <p class="section-sub" style="margin:8px 0;">Approving will mark Round ${item.roundNum} as postponed and auto-assign the next available replay date (11 Nov / 18 Nov), or leave it TBC if both are already used.</p>
+              <div class="review-actions">
+                <button class="btn btn-primary" onclick="approve('${item.id}')">Approve</button>
+                <button class="btn btn-reject" onclick="reject('${item.id}')">Reject</button>
+              </div>
+              <div class="status-msg" id="status-${item.id}"></div>
+            </div>
+          </div>`;
+      }
+
       const teamA = item.teamA ? `Team ${item.teamA}` : 'Team A';
       const teamB = item.teamB ? `Team ${item.teamB}` : 'Team B';
       const matchup = `${teamA} v ${teamB}`;
@@ -113,13 +128,15 @@
     const statusEl = document.getElementById(`status-${id}`);
     statusEl.className = 'status-msg';
     statusEl.textContent = 'Publishing…';
-    const body = {
+
+    const setsAEl = document.getElementById(`setsA-${id}`);
+    const body = setsAEl ? {
       id,
-      setsA: Number(document.getElementById(`setsA-${id}`).value),
+      setsA: Number(setsAEl.value),
       setsB: Number(document.getElementById(`setsB-${id}`).value),
       gamesA: Number(document.getElementById(`gamesA-${id}`).value),
       gamesB: Number(document.getElementById(`gamesB-${id}`).value),
-    };
+    } : { id }; // wet-round report -- nothing to correct, just approve/reject
     const winnerEl = document.getElementById(`winner-${id}`);
     if (winnerEl) body.winner = winnerEl.value;
 

@@ -37,6 +37,7 @@ exports.handler = async (event) => {
 
   const items = await Promise.all(ids.map(async id => {
     const record = await store.get(`pending/${id}.json`, { type: 'json' });
+    if (record.wet) return record; // no photo, no teams -- just a round number
     const photoBytes = await store.get(`pending/${id}.jpg`, { type: 'arrayBuffer' });
     const photoDataUrl = `data:image/jpeg;base64,${Buffer.from(photoBytes).toString('base64')}`;
     return { ...record, ...resolveTeams(record), photoDataUrl };
