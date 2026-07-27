@@ -80,7 +80,14 @@
   for (let i = 1; i <= 14; i++) {
     const opt = document.createElement('option');
     opt.value = i;
-    opt.textContent = `Round ${i}`;
+    // Flag wet-postponed rounds directly in the dropdown -- replays are
+    // always entered under their original round number (not the reserve
+    // date they're actually played on), so this is the only cue that
+    // "Round 5" is the one to pick during a make-up week, before you'd
+    // otherwise only see the WET note after selecting it.
+    opt.textContent = WET_ROUNDS.hasOwnProperty(i)
+      ? `Round ${i} — WET replay (${WET_ROUNDS[i] || 'date TBC'})`
+      : `Round ${i}`;
     roundSelect.appendChild(opt);
   }
 
