@@ -120,7 +120,11 @@ Respond with ONLY a single JSON object, no other text, no markdown code fences, 
     throw new Error(`Anthropic API failed: ${res.status} ${text}`);
   }
   const data = await res.json();
-  const text = data.content[0].text.trim().replace(/^```(json)?/i, '').replace(/```$/, '').trim();
+  // Don't assume content[0] is the text block -- the model can emit a
+  // `thinking` block first, pushing the actual answer to a later index.
+  const textBlock = data.content.find(block => block.type === 'text');
+  if (!textBlock) throw new Error(`No text block in Anthropic response: ${JSON.stringify(data.content)}`);
+  const text = textBlock.text.trim().replace(/^```(json)?/i, '').replace(/```$/, '').trim();
   return JSON.parse(text);
 }
 
