@@ -471,6 +471,25 @@ footer{
 @media (max-width:640px){ .review-item{grid-template-columns:1fr;} }
 .review-item img{width:100%; border-radius:8px; border:1px solid var(--paper-line); display:block;}
 .review-meta{font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;}
+
+.matchup-card{
+  display:flex; align-items:center; justify-content:center; gap:12px;
+  flex-wrap:wrap; text-align:center;
+  background:var(--paper); border:1px solid var(--paper-line); border-radius:var(--radius);
+  padding:16px; margin-bottom:18px;
+}
+.matchup-card .team-pill{
+  font-family:'Bebas Neue'; font-size:22px; letter-spacing:0.01em;
+  background:var(--court); color:var(--white);
+  padding:6px 16px; border-radius:8px; white-space:nowrap;
+}
+.matchup-card .vs{
+  font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em;
+  color:var(--ink-soft);
+}
+.matchup-card .matchup-sub{
+  flex-basis:100%; font-size:12.5px; color:var(--ink-soft);
+}
 .review-actions{display:flex; gap:10px; margin-top:6px;}
 .empty-note{color:var(--ink-soft); font-size:13.5px; font-style:italic;}
 

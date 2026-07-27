@@ -23,8 +23,8 @@
 
   <div class="upload-card">
     <div class="mode-toggle">
-      <button type="button" id="mode-weekly" class="active">Weekly round</button>
-      <button type="button" id="mode-finals">Finals match</button>
+      <button type="button" id="mode-weekly" class="active">Weekly Round</button>
+      <button type="button" id="mode-finals">Finals Match</button>
       <button type="button" id="mode-wet">Report Wet Round</button>
     </div>
 
@@ -49,7 +49,7 @@
 
       <div id="finals-fields" style="display:none;">
         <div class="field-row">
-          <label for="finals-slot">Finals match</label>
+          <label for="finals-slot">Finals Match</label>
           <select id="finals-slot" name="finalsSlot">
             <option value="game1">Elimination — Game 1</option>
             <option value="game2">Elimination — Game 2</option>
@@ -64,8 +64,8 @@
       <div id="wet-fields" style="display:none;">
         <p class="section-sub" style="margin-top:0;">Rained out before a round or finals night could be played? Report it here — no photo needed. Once approved, a weekly round gets a replay date assigned automatically; a finals night just pushes straight to the following Wednesday.</p>
         <div class="mode-toggle" style="margin-bottom:14px;">
-          <button type="button" id="wet-mode-weekly" class="active">Weekly round</button>
-          <button type="button" id="wet-mode-finals">Finals stage</button>
+          <button type="button" id="wet-mode-weekly" class="active">Weekly Round</button>
+          <button type="button" id="wet-mode-finals">Finals Stage</button>
         </div>
         <div id="wet-weekly-fields">
           <div class="field-row">
@@ -77,7 +77,7 @@
         </div>
         <div id="wet-finals-fields" style="display:none;">
           <div class="field-row">
-            <label for="wet-finals-stage">Finals stage</label>
+            <label for="wet-finals-stage">Finals Stage</label>
             <select id="wet-finals-stage" name="wetFinalsStage">
               <!-- populated by script -->
             </select>
@@ -86,7 +86,7 @@
         <div id="wet-already-reported-note" class="note-box" style="display:none;"></div>
       </div>
 
-      <div id="matchup-preview" class="review-meta"></div>
+      <div id="matchup-preview" class="matchup-card" style="display:none;"></div>
 
       <div id="photo-field" class="field-row">
         <label for="photo">Photo of the whole score sheet</label>
@@ -209,9 +209,11 @@
   // shown at all in wet-report mode -- there's no match to confirm yet.
   function updateMatchupPreview() {
     if (mode === 'wet') {
-      matchupPreview.textContent = '';
+      matchupPreview.style.display = 'none';
+      matchupPreview.innerHTML = '';
       return;
     }
+    matchupPreview.style.display = 'flex';
     if (mode === 'weekly') {
       const roundNum = Number(roundSelect.value);
       const courtNum = Number(courtSelect.value);
@@ -219,18 +221,26 @@
       const [teamA, teamB] = ALL_ROUNDS[roundNum - 1][slot];
       const dateText = DATES[roundNum - 1];
       const wetPill = WET_ROUNDS.hasOwnProperty(roundNum)
-        ? `<span class="pill wet">${WET_ROUNDS[roundNum] ? `WET &middot; replay ${WET_ROUNDS[roundNum]}` : 'WET &middot; no replay'}</span>`
+        ? ` <span class="pill wet">${WET_ROUNDS[roundNum] ? `WET &middot; replay ${WET_ROUNDS[roundNum]}` : 'WET &middot; no replay'}</span>`
         : '';
-      matchupPreview.innerHTML = `Team ${teamA} v Team ${teamB} &middot; ${dateText} ${wetPill}`;
+      matchupPreview.innerHTML = `
+        <span class="team-pill">Team ${teamA}</span>
+        <span class="vs">v</span>
+        <span class="team-pill">Team ${teamB}</span>
+        <span class="matchup-sub">${dateText}${wetPill}</span>`;
     } else {
       const state = computeFinalsState();
       const slotInfo = state[finalsSlotSelect.value];
       const dateKey = finalsSlotSelect.value.startsWith('game') ? 'elimination'
         : finalsSlotSelect.value.startsWith('semi') ? 'semis' : 'grandFinal';
       const dateNote = FINALS_DATES[dateKey];
-      matchupPreview.textContent = slotInfo
-        ? `Team ${slotInfo.teamA} v Team ${slotInfo.teamB} · ${dateNote}`
-        : `Teams not decided yet for this match · ${dateNote}`;
+      matchupPreview.innerHTML = slotInfo
+        ? `
+          <span class="team-pill">Team ${slotInfo.teamA}</span>
+          <span class="vs">v</span>
+          <span class="team-pill">Team ${slotInfo.teamB}</span>
+          <span class="matchup-sub">${dateNote}</span>`
+        : `<span class="matchup-sub">Teams not decided yet for this match &middot; ${dateNote}</span>`;
     }
   }
 
