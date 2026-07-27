@@ -33,7 +33,23 @@
       <button type="button" id="tab-archive">Archive</button>
     </div>
     <div id="review-list"></div>
-    <div id="archive-list" style="display:none;"></div>
+    <div id="archive-wrap" style="display:none;">
+      <div class="fixtures-filter">
+        <label for="archive-round-filter">Round</label>
+        <select id="archive-round-filter">
+          <option value="">All rounds</option>
+        </select>
+        <label for="archive-court-filter">Court</label>
+        <select id="archive-court-filter">
+          <option value="">All courts</option>
+          <option value="1">Court 1</option>
+          <option value="2">Court 2</option>
+          <option value="3">Court 3</option>
+          <option value="4">Court 4</option>
+        </select>
+      </div>
+      <div id="archive-list"></div>
+    </div>
   </div>
 </main>
 
@@ -48,11 +64,22 @@
   const authGate = document.getElementById('auth-gate');
   const tabsWrap = document.getElementById('tabs-wrap');
   const reviewList = document.getElementById('review-list');
+  const archiveWrap = document.getElementById('archive-wrap');
   const archiveList = document.getElementById('archive-list');
   const authStatus = document.getElementById('auth-status');
   const tabPendingBtn = document.getElementById('tab-pending');
   const tabArchiveBtn = document.getElementById('tab-archive');
+  const archiveRoundFilter = document.getElementById('archive-round-filter');
+  const archiveCourtFilter = document.getElementById('archive-court-filter');
   let archiveLoaded = false;
+  let archiveItems = [];
+
+  for (let i = 1; i <= 14; i++) {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `Round ${i}`;
+    archiveRoundFilter.appendChild(opt);
+  }
 
   function authHeader() {
     return { 'authorization': `Bearer ${sessionStorage.getItem('reviewPassword') || ''}` };
@@ -80,20 +107,41 @@
     if (res.status === 401) { handleAuthFailure(); return; }
     const data = await res.json();
     archiveLoaded = true;
-    renderArchiveList(data.items);
+    archiveItems = data.items;
+    applyArchiveFilters();
   }
+
+  // Round is the primary filter (find that week's sheets across every
+  // court at once); Court further narrows to one specific match. Finals
+  // and wet-round entries have no court/round-robin-round of their own, so
+  // they only show under "All rounds".
+  function applyArchiveFilters() {
+    const roundVal = archiveRoundFilter.value;
+    const courtVal = archiveCourtFilter.value;
+    let filtered = archiveItems;
+    if (roundVal) {
+      filtered = filtered
+        .filter(item => !item.wet && item.mode === 'weekly' && item.roundNum === Number(roundVal))
+        .sort((a, b) => a.courtNum - b.courtNum); // Court 1 -> 4 in order, not by approval time
+      if (courtVal) filtered = filtered.filter(item => item.courtNum === Number(courtVal));
+    }
+    renderArchiveList(filtered);
+  }
+
+  archiveRoundFilter.addEventListener('change', applyArchiveFilters);
+  archiveCourtFilter.addEventListener('change', applyArchiveFilters);
 
   tabPendingBtn.addEventListener('click', () => {
     tabPendingBtn.classList.add('active');
     tabArchiveBtn.classList.remove('active');
     reviewList.style.display = '';
-    archiveList.style.display = 'none';
+    archiveWrap.style.display = 'none';
   });
   tabArchiveBtn.addEventListener('click', () => {
     tabArchiveBtn.classList.add('active');
     tabPendingBtn.classList.remove('active');
     reviewList.style.display = 'none';
-    archiveList.style.display = '';
+    archiveWrap.style.display = '';
     if (!archiveLoaded) loadArchive();
   });
 
@@ -179,7 +227,9 @@
 
   function renderArchiveList(items) {
     if (items.length === 0) {
-      archiveList.innerHTML = '<p class="empty-note">Nothing approved yet.</p>';
+      archiveList.innerHTML = archiveRoundFilter.value
+        ? '<p class="empty-note">No approved sheet for that round/court yet.</p>'
+        : '<p class="empty-note">Nothing approved yet.</p>';
       return;
     }
 
