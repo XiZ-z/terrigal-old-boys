@@ -21,9 +21,11 @@ const DATES = [
 const RESERVE_DATES = ["11 Nov 2026", "18 Nov 2026"];
 
 // Rounds postponed due to wet weather. Value is the reserve date it's
-// been rescheduled to, or null while that's still TBC. Remove the round's
-// entry entirely once it's actually been replayed and its results are
-// entered -- from that point it behaves like any other completed round.
+// been rescheduled to, or null if there's no reserve slot left for it (only
+// two reserve weeks exist, so a third+ wet round in a season just never
+// gets replayed). Remove the round's entry entirely once it's actually
+// been replayed and its results are entered -- from that point it behaves
+// like any other completed round.
 const WET_ROUNDS = {
   // 5: "11 Nov 2026",
 };
@@ -33,6 +35,41 @@ const FINALS_DATES = {
   semis: "2 Dec 2026",
   grandFinal: "9 Dec 2026",
 };
+
+// Unlike the round robin's fixed reserve weeks, a wet finals night just
+// pushes straight to the following Wednesday -- so this counts how many
+// times each stage has itself been wet, and getFinalsDates() below cascades
+// that forward onto every later stage too, since finals nights are played
+// in strict sequence. A stage's own count is frozen once real results are
+// entered for it, so a later stage going wet doesn't retroactively change
+// an earlier (already-played) stage's displayed date.
+const FINALS_WET_WEEKS = {
+  elimination: 0,
+  semis: 0,
+  grandFinal: 0,
+};
+const FINALS_STAGE_ORDER = ['elimination', 'semis', 'grandFinal'];
+
+function addWeeks(dateStr, weeks){
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + weeks * 7);
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// Effective date for each finals stage, accounting for wet postponements.
+// Returns { elimination, semis, grandFinal }, each { date, weeksDelayed }.
+function getFinalsDates(){
+  let cumulative = 0;
+  const result = {};
+  FINALS_STAGE_ORDER.forEach(stage => {
+    cumulative += FINALS_WET_WEEKS[stage] || 0;
+    result[stage] = {
+      date: cumulative > 0 ? addWeeks(FINALS_DATES[stage], cumulative) : FINALS_DATES[stage],
+      weeksDelayed: cumulative,
+    };
+  });
+  return result;
+}
 
 // ---------- Weekly results ----------
 // Add one line here per court per week, once that court's paper score sheet
@@ -295,4 +332,19 @@ function computeFinalsState(){
   }
 
   return state;
+}
+
+// Lets Netlify Functions require() this exact file (round/slot logic etc.)
+// instead of duplicating it -- no effect in the browser, which has no
+// `module` global.
+if (typeof module !== 'undefined') {
+  module.exports = {
+    BASE_ROUNDS, ALL_ROUNDS, DATES, RESERVE_DATES, WET_ROUNDS, FINALS_DATES,
+    FINALS_WET_WEEKS, FINALS_STAGE_ORDER, getFinalsDates,
+    RESULTS, FINALS_RESULTS,
+    displayCourt, slotForCourt, matchPoints,
+    headToHeadStats, headToHeadCompare, computeLadder,
+    getAllPlayedMatches, computeSeasonRecords,
+    roundIsPlayed, getNextRound, getRoundsPlayed, computeFinalsState,
+  };
 }
