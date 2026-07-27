@@ -308,6 +308,7 @@ const FINALS_RESULTS = {
   game2: { setsA: 2,   setsB: 4,   gamesA: 20, gamesB: 28, winner: 'B' },
   game3: { setsA: 3.5, setsB: 2.5, gamesA: 25, gamesB: 23, winner: 'A' },
   semi1: { setsA: 4.5, setsB: 1.5, gamesA: 28, gamesB: 20, winner: 'A' },
+  semi2: { setsA: 4, setsB: 2, gamesA: 27, gamesB: 21, winner: 'A' },
 };
 
 // Resolves each bracket slot's actual teams (from ladder seeding and prior
