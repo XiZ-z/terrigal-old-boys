@@ -29,6 +29,10 @@
   <div id="review-list" style="display:none;"></div>
 </main>
 
+<div id="photo-lightbox" class="photo-lightbox" onclick="this.classList.remove('show')">
+  <img id="photo-lightbox-img" src="" alt="Score sheet photo, full size">
+</div>
+
 <div id="footer-placeholder"></div>
 
 <script src="nav.js"></script>
@@ -80,7 +84,7 @@
         </div>` : '';
       return `
         <div class="review-item" data-id="${item.id}">
-          <img src="${item.photoDataUrl}" alt="Score sheet photo">
+          <img src="${item.photoDataUrl}" alt="Score sheet photo" style="cursor:zoom-in;" onclick="openLightbox(this.src)">
           <div>
             <div class="review-meta">${label} &middot; submitted ${new Date(item.createdAt).toLocaleString()}</div>
             <div class="field-grid">
@@ -98,6 +102,11 @@
           </div>
         </div>`;
     }).join('');
+  }
+
+  function openLightbox(src) {
+    document.getElementById('photo-lightbox-img').src = src;
+    document.getElementById('photo-lightbox').classList.add('show');
   }
 
   async function approve(id) {

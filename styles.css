@@ -466,3 +466,12 @@ footer{
 .review-meta{font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;}
 .review-actions{display:flex; gap:10px; margin-top:6px;}
 .empty-note{color:var(--ink-soft); font-size:13.5px; font-style:italic;}
+
+.photo-lightbox{
+  display:none; position:fixed; inset:0; z-index:100;
+  background:rgba(11,38,40,0.88);
+  align-items:center; justify-content:center; padding:24px;
+  cursor:zoom-out;
+}
+.photo-lightbox.show{display:flex;}
+.photo-lightbox img{max-width:100%; max-height:100%; border-radius:8px; box-shadow:0 20px 50px -10px rgba(0,0,0,0.6);}
