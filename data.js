@@ -318,3 +318,17 @@ function computeFinalsState(){
 
   return state;
 }
+
+// Lets Netlify Functions require() this exact file (round/slot logic etc.)
+// instead of duplicating it -- no effect in the browser, which has no
+// `module` global.
+if (typeof module !== 'undefined') {
+  module.exports = {
+    BASE_ROUNDS, ALL_ROUNDS, DATES, RESERVE_DATES, WET_ROUNDS, FINALS_DATES,
+    RESULTS, FINALS_RESULTS,
+    displayCourt, slotForCourt, matchPoints,
+    headToHeadStats, headToHeadCompare, computeLadder,
+    getAllPlayedMatches, computeSeasonRecords,
+    roundIsPlayed, getNextRound, getRoundsPlayed, computeFinalsState,
+  };
+}
