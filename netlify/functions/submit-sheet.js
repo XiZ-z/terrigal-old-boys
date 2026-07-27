@@ -3,7 +3,7 @@
 // review; nothing here touches data.js directly.
 const { randomUUID } = require('crypto');
 const { slotForCourt } = require('../../data.js');
-const { sheetsStore, json, readScoreSheet } = require('./lib/shared');
+const { sheetsStore, json, readScoreSheet, checkRateLimit } = require('./lib/shared');
 
 const FINALS_SLOTS = ['game1', 'game2', 'game3', 'semi1', 'semi2', 'final'];
 
@@ -17,6 +17,11 @@ exports.handler = async (event) => {
     return json(400, { error: 'Invalid JSON body' });
   }
 
+  const store = sheetsStore();
+  if (!(await checkRateLimit(store, event))) {
+    return json(429, { error: 'Too many submissions from this connection today -- try again tomorrow, or contact Ash.' });
+  }
+
   const { mode, mediaType, photoBase64 } = payload;
 
   // A wet-round report has no photo to read -- just flags a round as
@@ -27,7 +32,6 @@ exports.handler = async (event) => {
       return json(400, { error: 'Invalid round number' });
     }
     const id = randomUUID();
-    const store = sheetsStore();
     await store.setJSON(`pending/${id}.json`, {
       id, mode: 'weekly', wet: true, roundNum,
       createdAt: new Date().toISOString(),
@@ -70,7 +74,6 @@ exports.handler = async (event) => {
   }
 
   const id = randomUUID();
-  const store = sheetsStore();
   await store.set(`pending/${id}.jpg`, Buffer.from(photoBase64, 'base64'));
   await store.setJSON(`pending/${id}.json`, {
     id, mode, blockConst, keyLiteral, key,

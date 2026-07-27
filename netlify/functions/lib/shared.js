@@ -35,6 +35,28 @@ function json(statusCode, body) {
   };
 }
 
+// submit-sheet has no login (the review/approve step is the real gate), but
+// it's a public endpoint that triggers a paid Anthropic API call each time
+// -- this bounds worst-case cost/abuse from that URL getting hammered,
+// without adding friction for the handful of genuine weekly submissions.
+// Generous on purpose: no real club member should ever come close to it.
+const RATE_LIMIT_PER_DAY = 20;
+
+function clientIp(event) {
+  return event.headers['x-nf-client-connection-ip']
+    || (event.headers['x-forwarded-for'] || '').split(',')[0].trim()
+    || 'unknown';
+}
+
+async function checkRateLimit(store, event) {
+  const ip = clientIp(event);
+  const key = `ratelimit/${new Date().toISOString().slice(0, 10)}/${ip}`;
+  const count = Number(await store.get(key)) || 0;
+  if (count >= RATE_LIMIT_PER_DAY) return false;
+  await store.set(key, String(count + 1));
+  return true;
+}
+
 // ---------- GitHub Contents API (commits approved results to data.js) ----------
 const GITHUB_API = 'https://api.github.com';
 
@@ -173,5 +195,5 @@ Respond with ONLY a single JSON object, no other text, no markdown code fences, 
 module.exports = {
   sheetsStore, isAuthed, json,
   getDataJs, putDataJs, upsertEntry, upsertWetRound,
-  readScoreSheet,
+  readScoreSheet, checkRateLimit,
 };
