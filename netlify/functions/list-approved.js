@@ -1,6 +1,8 @@
-// Password-gated: returns every approved submission (photo + the final
+// Password-gated: returns every approved submission's metadata (the final
 // recorded numbers, not the raw AI extraction) for review.html's Archive
-// tab -- lets Ash browse back through previously uploaded score sheets.
+// tab. Photos are NOT inlined here -- fetched separately via get-photo.js,
+// since a season's worth of approved photos combined would blow well past
+// Netlify's 6MB function response cap.
 const { sheetsStore, isAuthed, json, resolveTeams } = require('./lib/shared');
 
 exports.handler = async (event) => {
@@ -20,9 +22,7 @@ exports.handler = async (event) => {
       const record = await store.get(`approved/${id}.json`, { type: 'json' });
       if (!record) return null; // list() briefly surfacing a not-yet-propagated key
       if (record.wet) return record; // no photo -- just records what got marked postponed
-      const photoBytes = await store.get(`approved/${id}.jpg`, { type: 'arrayBuffer' });
-      const photoDataUrl = `data:image/jpeg;base64,${Buffer.from(photoBytes).toString('base64')}`;
-      return { ...record, ...resolveTeams(record), photoDataUrl };
+      return { ...record, ...resolveTeams(record) };
     }))).filter(Boolean);
 
     items.sort((a, b) => (b.approvedAt || '').localeCompare(a.approvedAt || ''));

@@ -240,7 +240,7 @@
         </div>` : '';
       return `
         <div class="review-item" data-id="${item.id}">
-          <img src="${item.photoDataUrl}" alt="Score sheet photo" style="cursor:zoom-in;" onclick="openLightbox(this.src)">
+          <img data-photo-id="${item.id}" data-photo-store="pending" alt="Score sheet photo" style="cursor:zoom-in; background:var(--paper-line); min-height:120px;" onclick="openLightbox(this.src)">
           <div>
             <div class="review-meta">${label} ${duplicatePill(item)} &middot; submitted ${new Date(item.createdAt).toLocaleString()}</div>
             <div class="field-grid">
@@ -258,6 +258,26 @@
           </div>
         </div>`;
     }).join('');
+    loadPhotosInto(reviewList);
+  }
+
+  // Each photo is its own request (get-photo.js), not inlined into the list
+  // response -- combining every photo into one JSON payload hits Netlify's
+  // 6MB function response cap as soon as more than a couple are pending.
+  async function loadPhotoInto(imgEl) {
+    const id = imgEl.dataset.photoId;
+    const storeName = imgEl.dataset.photoStore;
+    try {
+      const res = await fetch(`/.netlify/functions/get-photo?store=${storeName}&id=${id}`, { headers: authHeader() });
+      if (!res.ok) { imgEl.alt = 'Could not load photo'; return; }
+      const blob = await res.blob();
+      imgEl.src = URL.createObjectURL(blob);
+    } catch {
+      imgEl.alt = 'Could not load photo';
+    }
+  }
+  function loadPhotosInto(container) {
+    container.querySelectorAll('img[data-photo-id]').forEach(loadPhotoInto);
   }
 
   const FINALS_STAGE_LABELS_ARCHIVE = { elimination: 'Elimination', semis: 'Semi Finals', grandFinal: 'Grand Final' };
@@ -298,13 +318,14 @@
 
       return `
         <div class="review-item">
-          <img src="${item.photoDataUrl}" alt="Score sheet photo" style="cursor:zoom-in;" onclick="openLightbox(this.src)">
+          <img data-photo-id="${item.id}" data-photo-store="approved" alt="Score sheet photo" style="cursor:zoom-in; background:var(--paper-line); min-height:120px;" onclick="openLightbox(this.src)">
           <div>
             <div class="review-meta">${label} &middot; approved ${approvedWhen}</div>
             <div class="review-meta mono">${r.setsA}&ndash;${r.setsB} sets &middot; ${r.gamesA}&ndash;${r.gamesB} games${winnerNote}</div>
           </div>
         </div>`;
     }).join('');
+    loadPhotosInto(archiveList);
   }
 
   function openLightbox(src) {

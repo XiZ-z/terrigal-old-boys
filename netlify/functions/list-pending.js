@@ -1,5 +1,8 @@
-// Password-gated: returns every pending submission (with its photo inlined
-// as a data URL) for review.html to render.
+// Password-gated: returns every pending submission's metadata for
+// review.html to render. Photos are NOT inlined here -- review.html fetches
+// each one separately via get-photo.js, since combining them all into one
+// response hits Netlify's 6MB function response cap as soon as more than a
+// couple of photos are pending at once.
 const { sheetsStore, isAuthed, json, resolveTeams } = require('./lib/shared');
 
 exports.handler = async (event) => {
@@ -23,9 +26,7 @@ exports.handler = async (event) => {
       // item too, not just the one that raced).
       if (!record) return null;
       if (record.wet) return record; // no photo, no teams -- just a round number
-      const photoBytes = await store.get(`pending/${id}.jpg`, { type: 'arrayBuffer' });
-      const photoDataUrl = `data:image/jpeg;base64,${Buffer.from(photoBytes).toString('base64')}`;
-      return { ...record, ...resolveTeams(record), photoDataUrl };
+      return { ...record, ...resolveTeams(record) };
     }))).filter(Boolean);
 
     items.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
