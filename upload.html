@@ -15,6 +15,7 @@
 <main>
   <div class="section-title">Upload Score Sheet</div>
   <p class="section-sub">Take a photo of the whole score sheet for your court and submit it here. It'll be read automatically and then double-checked before it goes live — no need to type any numbers in yourself.</p>
+  <p class="section-sub"><span class="pill wet">WET</span>&nbsp; If a round was postponed for wet weather and you're uploading its replay, select that round's <strong>original number</strong> below (not today's date) — it's marked WET in the list so it's easy to spot.</p>
 
   <div class="upload-card">
     <div class="mode-toggle">
@@ -86,7 +87,7 @@
     // "Round 5" is the one to pick during a make-up week, before you'd
     // otherwise only see the WET note after selecting it.
     opt.textContent = WET_ROUNDS.hasOwnProperty(i)
-      ? `Round ${i} — WET replay (${WET_ROUNDS[i] || 'date TBC'})`
+      ? `☔ Round ${i} — WET replay (${WET_ROUNDS[i] || 'date TBC'})`
       : `Round ${i}`;
     roundSelect.appendChild(opt);
   }
@@ -110,11 +111,11 @@
       const courtNum = Number(courtSelect.value);
       const slot = slotForCourt(roundNum, courtNum);
       const [teamA, teamB] = ALL_ROUNDS[roundNum - 1][slot];
-      let dateNote = DATES[roundNum - 1];
-      if (WET_ROUNDS.hasOwnProperty(roundNum)) {
-        dateNote += ` — WET, replay ${WET_ROUNDS[roundNum] || 'date TBC'}`;
-      }
-      matchupPreview.textContent = `Team ${teamA} v Team ${teamB} · ${dateNote}`;
+      const dateText = DATES[roundNum - 1];
+      const wetPill = WET_ROUNDS.hasOwnProperty(roundNum)
+        ? `<span class="pill wet">WET &middot; replay ${WET_ROUNDS[roundNum] || 'date TBC'}</span>`
+        : '';
+      matchupPreview.innerHTML = `Team ${teamA} v Team ${teamB} &middot; ${dateText} ${wetPill}`;
     } else {
       const state = computeFinalsState();
       const slotInfo = state[finalsSlotSelect.value];
