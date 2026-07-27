@@ -9,6 +9,7 @@
     { key: "teams",    label: "Teams",    href: "teams.html" },
     { key: "finals",   label: "Finals",   href: "finals.html" },
     { key: "rules",    label: "Rules",    href: "rules.html" },
+    { key: "upload",   label: "Upload",   href: "upload.html" },
   ];
 
   const current = document.body.dataset.page;

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Upload Score Sheet — Terrigal Old Boys</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="upload">
+
+<div id="nav-placeholder"></div>
+
+<main>
+  <div class="section-title">Upload Score Sheet</div>
+  <p class="section-sub">Photograph your court's Total row and submit it here. It'll be read automatically and then double-checked before it goes live — no need to type any numbers in yourself.</p>
+
+  <div class="upload-card">
+    <div class="mode-toggle">
+      <button type="button" id="mode-weekly" class="active">Weekly round</button>
+      <button type="button" id="mode-finals">Finals match</button>
+    </div>
+
+    <form id="upload-form">
+      <div id="weekly-fields">
+        <div class="field-grid">
+          <div class="field-row">
+            <label for="round-num">Round</label>
+            <select id="round-num" name="roundNum">
+              <!-- populated by script -->
+            </select>
+          </div>
+          <div class="field-row">
+            <label for="court-num">Court</label>
+            <select id="court-num" name="courtNum">
+              <option value="1">Court 1</option>
+              <option value="2">Court 2</option>
+              <option value="3">Court 3</option>
+              <option value="4">Court 4</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div id="finals-fields" style="display:none;">
+        <div class="field-row">
+          <label for="finals-slot">Finals match</label>
+          <select id="finals-slot" name="finalsSlot">
+            <option value="game1">Elimination — Game 1</option>
+            <option value="game2">Elimination — Game 2</option>
+            <option value="game3">Elimination — Game 3</option>
+            <option value="semi1">Semi Final 1</option>
+            <option value="semi2">Semi Final 2</option>
+            <option value="final">Grand Final</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <label for="photo">Photo of the Total row</label>
+        <input type="file" id="photo" name="photo" accept="image/*" capture="environment" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="submit-btn">Submit for review</button>
+
+      <div id="status" class="status-msg"></div>
+    </form>
+  </div>
+</main>
+
+<div id="footer-placeholder"></div>
+
+<script src="nav.js"></script>
+<script>
+  const roundSelect = document.getElementById('round-num');
+  for (let i = 1; i <= 14; i++) {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `Round ${i}`;
+    roundSelect.appendChild(opt);
+  }
+
+  const modeWeeklyBtn = document.getElementById('mode-weekly');
+  const modeFinalsBtn = document.getElementById('mode-finals');
+  const weeklyFields = document.getElementById('weekly-fields');
+  const finalsFields = document.getElementById('finals-fields');
+  let mode = 'weekly';
+
+  modeWeeklyBtn.addEventListener('click', () => {
+    mode = 'weekly';
+    modeWeeklyBtn.classList.add('active');
+    modeFinalsBtn.classList.remove('active');
+    weeklyFields.style.display = '';
+    finalsFields.style.display = 'none';
+  });
+  modeFinalsBtn.addEventListener('click', () => {
+    mode = 'finals';
+    modeFinalsBtn.classList.add('active');
+    modeWeeklyBtn.classList.remove('active');
+    weeklyFields.style.display = 'none';
+    finalsFields.style.display = '';
+  });
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  const form = document.getElementById('upload-form');
+  const submitBtn = document.getElementById('submit-btn');
+  const status = document.getElementById('status');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const photoInput = document.getElementById('photo');
+    const file = photoInput.files[0];
+    if (!file) return;
+
+    submitBtn.disabled = true;
+    status.className = 'status-msg';
+    status.textContent = 'Reading photo, this can take a few seconds…';
+
+    try {
+      const photoBase64 = await fileToBase64(file);
+      const payload = { mode, mediaType: file.type, photoBase64 };
+      if (mode === 'weekly') {
+        payload.roundNum = Number(document.getElementById('round-num').value);
+        payload.courtNum = Number(document.getElementById('court-num').value);
+      } else {
+        payload.finalsSlot = document.getElementById('finals-slot').value;
+      }
+
+      const res = await fetch('/.netlify/functions/submit-sheet', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        status.className = 'status-msg error';
+        status.textContent = data.error || 'Something went wrong submitting this.';
+      } else {
+        status.className = 'status-msg success';
+        status.textContent = `Submitted — read as ${data.extracted.setsA}–${data.extracted.setsB} sets, ${data.extracted.gamesA}–${data.extracted.gamesB} games. Awaiting approval before it goes live.`;
+        form.reset();
+      }
+    } catch (err) {
+      status.className = 'status-msg error';
+      status.textContent = 'Could not submit — check your connection and try again.';
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

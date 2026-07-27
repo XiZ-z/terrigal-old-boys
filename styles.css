@@ -417,3 +417,52 @@ footer{
   max-width:1080px; margin:0 auto; padding:0 20px 40px;
   font-size:12px; color:var(--ink-soft);
 }
+
+/* ---------- Buttons / forms (Upload + Review) ---------- */
+.btn{
+  font-family:'IBM Plex Sans', sans-serif; font-weight:600; font-size:13.5px;
+  padding:10px 20px; border-radius:9px; border:1px solid transparent;
+  cursor:pointer; transition:transform .1s ease, box-shadow .1s ease;
+}
+.btn:active{transform:translateY(1px);}
+.btn:disabled{opacity:0.5; cursor:not-allowed;}
+.btn-primary{background:var(--ball); color:var(--court-dark); border-color:var(--ball-dark);}
+.btn-primary:hover:not(:disabled){box-shadow:0 6px 14px -8px rgba(159,176,48,0.6);}
+.btn-reject{background:var(--white); color:var(--clay); border-color:var(--clay);}
+.btn-reject:hover:not(:disabled){background:#FDF3EE;}
+
+.field-row{margin-bottom:16px;}
+.field-row label{
+  display:block; font-size:12px; font-weight:600; text-transform:uppercase;
+  letter-spacing:0.06em; color:var(--ink-soft); margin-bottom:6px;
+}
+.field-row select, .field-row input[type="number"], .field-row input[type="file"]{
+  font-family:'IBM Plex Sans', sans-serif; font-size:14px; padding:9px 11px;
+  border:1px solid var(--paper-line); border-radius:8px; background:var(--white);
+  color:var(--ink); width:100%;
+}
+.field-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+.mode-toggle{display:flex; gap:8px; margin-bottom:18px;}
+.mode-toggle button{
+  flex:1; padding:10px; border-radius:8px; border:1px solid var(--paper-line);
+  background:var(--white); color:var(--ink-soft); font-weight:600; font-size:13.5px;
+  cursor:pointer;
+}
+.mode-toggle button.active{background:var(--court); color:var(--white); border-color:var(--court-dark);}
+
+.upload-card, .auth-card, .review-item{
+  background:var(--white); border:1px solid var(--paper-line); border-radius:var(--radius);
+  padding:22px; margin-bottom:18px;
+}
+.upload-card{max-width:460px;}
+.auth-card{max-width:360px;}
+.status-msg{margin-top:14px; font-size:13.5px; line-height:1.5;}
+.status-msg.error{color:var(--clay); font-weight:600;}
+.status-msg.success{color:var(--court); font-weight:600;}
+
+.review-item{display:grid; grid-template-columns:200px 1fr; gap:20px;}
+@media (max-width:640px){ .review-item{grid-template-columns:1fr;} }
+.review-item img{width:100%; border-radius:8px; border:1px solid var(--paper-line); display:block;}
+.review-meta{font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;}
+.review-actions{display:flex; gap:10px; margin-top:6px;}
+.empty-note{color:var(--ink-soft); font-size:13.5px; font-style:italic;}

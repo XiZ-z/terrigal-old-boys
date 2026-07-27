@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Review Submissions — Terrigal Old Boys</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="review">
+
+<div id="nav-placeholder"></div>
+
+<main>
+  <div class="section-title">Review Submissions</div>
+  <p class="section-sub">Check each photo against the extracted numbers, correct anything wrong, then approve or reject.</p>
+
+  <div id="auth-gate" class="auth-card">
+    <div class="field-row">
+      <label for="password">Review password</label>
+      <input type="password" id="password" placeholder="Enter password">
+    </div>
+    <button class="btn btn-primary" id="unlock-btn">Unlock</button>
+    <div id="auth-status" class="status-msg error"></div>
+  </div>
+
+  <div id="review-list" style="display:none;"></div>
+</main>
+
+<div id="footer-placeholder"></div>
+
+<script src="nav.js"></script>
+<script>
+  const authGate = document.getElementById('auth-gate');
+  const reviewList = document.getElementById('review-list');
+  const authStatus = document.getElementById('auth-status');
+
+  function authHeader() {
+    return { 'authorization': `Bearer ${sessionStorage.getItem('reviewPassword') || ''}` };
+  }
+
+  async function loadPending() {
+    const res = await fetch('/.netlify/functions/list-pending', { headers: authHeader() });
+    if (res.status === 401) {
+      sessionStorage.removeItem('reviewPassword');
+      authGate.style.display = '';
+      reviewList.style.display = 'none';
+      authStatus.textContent = 'Wrong password.';
+      return;
+    }
+    const data = await res.json();
+    renderList(data.items);
+  }
+
+  function renderList(items) {
+    authGate.style.display = 'none';
+    reviewList.style.display = '';
+
+    if (items.length === 0) {
+      reviewList.innerHTML = '<p class="empty-note">Nothing pending review right now.</p>';
+      return;
+    }
+
+    reviewList.innerHTML = items.map(item => {
+      const label = item.mode === 'finals'
+        ? `Finals — ${item.finalsSlot}`
+        : `Round ${item.roundNum}, Court ${item.courtNum} (key ${item.key})`;
+      const winnerField = item.mode === 'finals' ? `
+        <div class="field-row">
+          <label>Winner</label>
+          <select id="winner-${item.id}">
+            <option value="A" ${item.extracted.winner === 'A' ? 'selected' : ''}>Team A</option>
+            <option value="B" ${item.extracted.winner === 'B' ? 'selected' : ''}>Team B</option>
+          </select>
+        </div>` : '';
+      return `
+        <div class="review-item" data-id="${item.id}">
+          <img src="${item.photoDataUrl}" alt="Score sheet photo">
+          <div>
+            <div class="review-meta">${label} &middot; submitted ${new Date(item.createdAt).toLocaleString()}</div>
+            <div class="field-grid">
+              <div class="field-row"><label>Sets A</label><input type="number" step="0.5" id="setsA-${item.id}" value="${item.extracted.setsA}"></div>
+              <div class="field-row"><label>Sets B</label><input type="number" step="0.5" id="setsB-${item.id}" value="${item.extracted.setsB}"></div>
+              <div class="field-row"><label>Games A</label><input type="number" id="gamesA-${item.id}" value="${item.extracted.gamesA}"></div>
+              <div class="field-row"><label>Games B</label><input type="number" id="gamesB-${item.id}" value="${item.extracted.gamesB}"></div>
+            </div>
+            ${winnerField}
+            <div class="review-actions">
+              <button class="btn btn-primary" onclick="approve('${item.id}')">Approve</button>
+              <button class="btn btn-reject" onclick="reject('${item.id}')">Reject</button>
+            </div>
+            <div class="status-msg" id="status-${item.id}"></div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  async function approve(id) {
+    const statusEl = document.getElementById(`status-${id}`);
+    statusEl.className = 'status-msg';
+    statusEl.textContent = 'Publishing…';
+    const body = {
+      id,
+      setsA: Number(document.getElementById(`setsA-${id}`).value),
+      setsB: Number(document.getElementById(`setsB-${id}`).value),
+      gamesA: Number(document.getElementById(`gamesA-${id}`).value),
+      gamesB: Number(document.getElementById(`gamesB-${id}`).value),
+    };
+    const winnerEl = document.getElementById(`winner-${id}`);
+    if (winnerEl) body.winner = winnerEl.value;
+
+    const res = await fetch('/.netlify/functions/approve-sheet', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...authHeader() },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = data.error || 'Failed to publish.';
+      return;
+    }
+    loadPending();
+  }
+
+  async function reject(id) {
+    await fetch('/.netlify/functions/reject-sheet', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ id }),
+    });
+    loadPending();
+  }
+
+  document.getElementById('unlock-btn').addEventListener('click', () => {
+    const pw = document.getElementById('password').value;
+    sessionStorage.setItem('reviewPassword', pw);
+    authStatus.textContent = '';
+    loadPending();
+  });
+
+  if (sessionStorage.getItem('reviewPassword')) loadPending();
+</script>
+</body>
+</html>
