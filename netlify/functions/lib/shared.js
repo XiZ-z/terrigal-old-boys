@@ -3,7 +3,19 @@ const { getStore } = require('@netlify/blobs');
 
 const STORE_NAME = 'sheets';
 
+// getStore(name) alone relies on Netlify auto-injecting site credentials
+// into the function's environment, which isn't reliably present in every
+// deploy context -- falls back to explicit siteID/token (a Netlify
+// Personal Access Token) when those are configured, since that's Netlify's
+// own documented fix for MissingBlobsEnvironmentError.
 function sheetsStore() {
+  if (process.env.BLOBS_SITE_ID && process.env.BLOBS_TOKEN) {
+    return getStore({
+      name: STORE_NAME,
+      siteID: process.env.BLOBS_SITE_ID,
+      token: process.env.BLOBS_TOKEN,
+    });
+  }
   return getStore(STORE_NAME);
 }
 
