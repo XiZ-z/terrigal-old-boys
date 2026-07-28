@@ -1,8 +1,27 @@
 // Shared helpers for the score-sheet upload/review functions.
 const { getStore } = require('@netlify/blobs');
-const { ALL_ROUNDS, computeFinalsState } = require('../../../data.js');
+const { ALL_ROUNDS, computeFinalsState, DATES, WET_ROUNDS, getFinalsDates } = require('../../../data.js');
 
 const STORE_NAME = 'sheets';
+
+const FINALS_SLOT_STAGE = {
+  game1: 'elimination', game2: 'elimination', game3: 'elimination',
+  semi1: 'semis', semi2: 'semis',
+  final: 'grandFinal',
+};
+
+// The actual calendar date a weekly round or finals slot is played on --
+// accounts for wet-weather reschedules on both the round-robin (WET_ROUNDS)
+// and finals (getFinalsDates()'s cascade) sides.
+function resolveDate({ mode, roundNum, finalsSlot }) {
+  return mode === 'weekly'
+    ? (WET_ROUNDS[roundNum] || DATES[roundNum - 1])
+    : getFinalsDates()[FINALS_SLOT_STAGE[finalsSlot]].date;
+}
+
+function dateSlug(dateStr) {
+  return dateStr.replace(/\s+/g, '');
+}
 
 // getStore(name) alone relies on Netlify auto-injecting site credentials
 // into the function's environment, which isn't reliably present in every
@@ -247,5 +266,5 @@ Respond with ONLY a single JSON object, no other text, no markdown code fences, 
 module.exports = {
   sheetsStore, isAuthed, json, resolveTeams,
   getDataJs, putDataJs, upsertEntry, upsertWetRound, upsertFinalsWetWeek,
-  readScoreSheet, checkRateLimit,
+  readScoreSheet, checkRateLimit, resolveDate, dateSlug,
 };
