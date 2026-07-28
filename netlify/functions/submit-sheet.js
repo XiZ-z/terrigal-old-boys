@@ -2,11 +2,16 @@
 // Reads the totals off it with Claude vision and stages it for Ash to
 // review; nothing here touches data.js directly.
 const { randomUUID } = require('crypto');
-const { slotForCourt } = require('../../data.js');
+const { slotForCourt, DATES, WET_ROUNDS, getFinalsDates } = require('../../data.js');
 const { sheetsStore, json, readScoreSheet, checkRateLimit } = require('./lib/shared');
 
 const FINALS_SLOTS = ['game1', 'game2', 'game3', 'semi1', 'semi2', 'final'];
 const FINALS_STAGES = ['elimination', 'semis', 'grandFinal'];
+const FINALS_SLOT_STAGE = {
+  game1: 'elimination', game2: 'elimination', game3: 'elimination',
+  semi1: 'semis', semi2: 'semis',
+  final: 'grandFinal',
+};
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
@@ -96,8 +101,14 @@ exports.handler = async (event) => {
     return json(502, { error: `Could not read this photo clearly (got: ${JSON.stringify(extracted)}) -- try again with a clearer, well-lit photo of the Total row.` });
   }
 
+  const dateStr = mode === 'weekly'
+    ? (WET_ROUNDS[roundNum] || DATES[roundNum - 1])
+    : getFinalsDates()[FINALS_SLOT_STAGE[finalsSlot]].date;
+
   const id = randomUUID();
-  await store.set(`pending/${id}.jpg`, Buffer.from(photoBase64, 'base64'));
+  await store.set(`pending/${id}.jpg`, Buffer.from(photoBase64, 'base64'), {
+    metadata: { mode, roundNum, courtNum, finalsSlot, date: dateStr },
+  });
   await store.setJSON(`pending/${id}.json`, {
     id, mode, blockConst, keyLiteral, key,
     roundNum, courtNum, finalsSlot,

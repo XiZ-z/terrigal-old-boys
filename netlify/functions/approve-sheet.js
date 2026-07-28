@@ -71,8 +71,8 @@ exports.handler = async (event) => {
       `Add result ${record.key} (approved via review)`
     );
 
-    const photoBytes = await store.get(`pending/${id}.jpg`, { type: 'arrayBuffer' });
-    await store.set(`approved/${id}.jpg`, Buffer.from(photoBytes));
+    const { data: photoBytes, metadata: photoMetadata } = await store.getWithMetadata(`pending/${id}.jpg`, { type: 'arrayBuffer' });
+    await store.set(`approved/${id}.jpg`, Buffer.from(photoBytes), { metadata: photoMetadata });
     await store.setJSON(`approved/${id}.json`, {
       ...record,
       approved: { setsA, setsB, gamesA, gamesB, winner: payload.winner },
