@@ -34,6 +34,10 @@
     </div>
     <div id="review-list"></div>
     <div id="archive-wrap" style="display:none;">
+      <div class="mode-toggle" style="margin-bottom:1rem;">
+        <button type="button" id="archive-status-approved" class="active">Approved</button>
+        <button type="button" id="archive-status-rejected">Rejected</button>
+      </div>
       <div class="fixtures-filter">
         <label for="archive-round-filter">Round</label>
         <select id="archive-round-filter">
@@ -71,8 +75,13 @@
   const tabArchiveBtn = document.getElementById('tab-archive');
   const archiveRoundFilter = document.getElementById('archive-round-filter');
   const archiveCourtFilter = document.getElementById('archive-court-filter');
-  let archiveLoaded = false;
-  let archiveItems = [];
+  const archiveStatusApprovedBtn = document.getElementById('archive-status-approved');
+  const archiveStatusRejectedBtn = document.getElementById('archive-status-rejected');
+  let archiveStatus = 'approved';
+  const archiveCache = {
+    approved: { loaded: false, items: [] },
+    rejected: { loaded: false, items: [] },
+  };
 
   for (let i = 1; i <= 14; i++) {
     const opt = document.createElement('option');
@@ -118,16 +127,15 @@
 
   async function loadArchive() {
     archiveList.innerHTML = '<p class="empty-note">Loading…</p>';
-    const res = await fetch('/.netlify/functions/list-approved', { headers: authHeader() });
+    const res = await fetch(`/.netlify/functions/list-${archiveStatus}`, { headers: authHeader() });
     if (res.status === 401) { handleAuthFailure(); return; }
     const { data, raw } = await parseOrRawText(res);
     if (!res.ok) {
       const detail = (data && (data.error || data.errorMessage)) || raw;
-      archiveList.innerHTML = `<p class="empty-note">Couldn't load the archive (HTTP ${res.status}): ${detail}</p>`;
+      archiveList.innerHTML = `<p class="empty-note">Couldn't load ${archiveStatus} submissions (HTTP ${res.status}): ${detail}</p>`;
       return;
     }
-    archiveLoaded = true;
-    archiveItems = data.items;
+    archiveCache[archiveStatus] = { loaded: true, items: data.items };
     applyArchiveFilters();
   }
 
@@ -138,7 +146,7 @@
   function applyArchiveFilters() {
     const roundVal = archiveRoundFilter.value;
     const courtVal = archiveCourtFilter.value;
-    let filtered = archiveItems;
+    let filtered = archiveCache[archiveStatus].items;
     if (roundVal) {
       filtered = filtered
         .filter(item => !item.wet && item.mode === 'weekly' && item.roundNum === Number(roundVal))
@@ -151,6 +159,17 @@
   archiveRoundFilter.addEventListener('change', applyArchiveFilters);
   archiveCourtFilter.addEventListener('change', applyArchiveFilters);
 
+  function switchArchiveStatus(status) {
+    if (archiveStatus === status) return;
+    archiveStatus = status;
+    archiveStatusApprovedBtn.classList.toggle('active', status === 'approved');
+    archiveStatusRejectedBtn.classList.toggle('active', status === 'rejected');
+    if (archiveCache[status].loaded) applyArchiveFilters();
+    else loadArchive();
+  }
+  archiveStatusApprovedBtn.addEventListener('click', () => switchArchiveStatus('approved'));
+  archiveStatusRejectedBtn.addEventListener('click', () => switchArchiveStatus('rejected'));
+
   tabPendingBtn.addEventListener('click', () => {
     tabPendingBtn.classList.add('active');
     tabArchiveBtn.classList.remove('active');
@@ -162,7 +181,7 @@
     tabPendingBtn.classList.remove('active');
     reviewList.style.display = 'none';
     archiveWrap.style.display = '';
-    if (!archiveLoaded) loadArchive();
+    if (!archiveCache[archiveStatus].loaded) loadArchive();
   });
 
   function renderList(items) {
@@ -283,27 +302,32 @@
   const FINALS_STAGE_LABELS_ARCHIVE = { elimination: 'Elimination', semis: 'Semi Finals', grandFinal: 'Grand Final' };
 
   function renderArchiveList(items) {
+    const isRejected = archiveStatus === 'rejected';
+    const verb = isRejected ? 'rejected' : 'approved';
+
     if (items.length === 0) {
       archiveList.innerHTML = archiveRoundFilter.value
-        ? '<p class="empty-note">No approved sheet for that round/court yet.</p>'
-        : '<p class="empty-note">Nothing approved yet.</p>';
+        ? `<p class="empty-note">No ${verb} sheet for that round/court yet.</p>`
+        : `<p class="empty-note">Nothing ${verb} yet.</p>`;
       return;
     }
 
     archiveList.innerHTML = items.map(item => {
-      const approvedWhen = item.approvedAt ? new Date(item.approvedAt).toLocaleString() : '';
+      const whenRaw = isRejected ? item.rejectedAt : item.approvedAt;
+      const when = whenRaw ? new Date(whenRaw).toLocaleString() : '';
+      const reasonNote = isRejected && item.reason ? ` &middot; Reason: ${item.reason}` : '';
 
       if (item.wet && item.mode === 'finals') {
         const stageLabel = FINALS_STAGE_LABELS_ARCHIVE[item.finalsStage] || item.finalsStage;
         return `
           <div class="review-item" style="grid-template-columns:1fr;">
-            <div class="review-meta"><span class="pill wet">WET</span>&nbsp; ${stageLabel} marked postponed &middot; approved ${approvedWhen}</div>
+            <div class="review-meta"><span class="pill wet">WET</span>&nbsp; ${stageLabel} marked postponed &middot; ${verb} ${when}${reasonNote}</div>
           </div>`;
       }
       if (item.wet) {
         return `
           <div class="review-item" style="grid-template-columns:1fr;">
-            <div class="review-meta"><span class="pill wet">WET</span>&nbsp; Round ${item.roundNum} marked postponed &middot; approved ${approvedWhen}</div>
+            <div class="review-meta"><span class="pill wet">WET</span>&nbsp; Round ${item.roundNum} marked postponed &middot; ${verb} ${when}${reasonNote}</div>
           </div>`;
       }
 
@@ -318,9 +342,9 @@
 
       return `
         <div class="review-item">
-          <img data-photo-id="${item.id}" data-photo-store="approved" alt="Score sheet photo" style="cursor:zoom-in; background:var(--paper-line); min-height:120px;" onclick="openLightbox(this.src)">
+          <img data-photo-id="${item.id}" data-photo-store="${archiveStatus}" alt="Score sheet photo" style="cursor:zoom-in; background:var(--paper-line); min-height:120px;" onclick="openLightbox(this.src)">
           <div>
-            <div class="review-meta">${label} &middot; approved ${approvedWhen}</div>
+            <div class="review-meta">${label} &middot; ${verb} ${when}${reasonNote}</div>
             <div class="review-meta mono">${r.setsA}&ndash;${r.setsB} sets &middot; ${r.gamesA}&ndash;${r.gamesB} games${winnerNote}</div>
           </div>
         </div>`;
@@ -370,7 +394,7 @@
         setItemButtonsDisabled(id, false);
         return;
       }
-      archiveLoaded = false; // this approval added a new archive entry -- refetch next time that tab opens
+      archiveCache.approved.loaded = false; // this approval added a new entry -- refetch next time that tab opens
       loadPending();
     } catch {
       statusEl.className = 'status-msg error';
@@ -401,6 +425,7 @@
         setItemButtonsDisabled(id, false);
         return;
       }
+      archiveCache.rejected.loaded = false; // this rejection added a new entry -- refetch next time that tab opens
       loadPending();
     } catch {
       statusEl.className = 'status-msg error';

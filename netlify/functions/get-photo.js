@@ -1,8 +1,8 @@
-// Password-gated: returns a single pending/approved photo as raw binary.
-// Split out from list-pending/list-approved because inlining every photo
-// as a base64 data URL into one combined response hits Netlify's 6MB
-// function response cap as soon as more than one or two are pending at
-// once -- this way each photo is its own small request instead.
+// Password-gated: returns a single pending/approved/rejected photo as raw
+// binary. Split out from list-pending/list-approved/list-rejected because
+// inlining every photo as a base64 data URL into one combined response hits
+// Netlify's 6MB function response cap as soon as more than one or two are
+// pending at once -- this way each photo is its own small request instead.
 const { sheetsStore, isAuthed } = require('./lib/shared');
 
 exports.handler = async (event) => {
@@ -10,7 +10,7 @@ exports.handler = async (event) => {
   if (!isAuthed(event)) return { statusCode: 401, body: 'Unauthorized' };
 
   const { store: storeName, id } = event.queryStringParameters || {};
-  if (!['pending', 'approved'].includes(storeName) || !id) {
+  if (!['pending', 'approved', 'rejected'].includes(storeName) || !id) {
     return { statusCode: 400, body: 'Invalid store/id' };
   }
 
