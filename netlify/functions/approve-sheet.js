@@ -3,7 +3,7 @@
 // Contents API, then archives the pending record (kept, not deleted, as an
 // audit trail).
 const { RESERVE_DATES } = require('../../data.js');
-const { sheetsStore, isAuthed, json, getDataJs, putDataJs, upsertEntry, upsertWetRound, upsertFinalsWetWeek } = require('./lib/shared');
+const { sheetsStore, isAuthed, json, getDataJs, putDataJs, upsertEntry, upsertWetRound, upsertFinalsWetWeek, resolveDate, dateSlug } = require('./lib/shared');
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
@@ -71,10 +71,18 @@ exports.handler = async (event) => {
       `Add result ${record.key} (approved via review)`
     );
 
+    // Nest approved photos under date/court (or date/finals-slot) so
+    // they're browsable at a glance in the Blobs dashboard, not just a flat
+    // pile of ids -- pending stays flat since it's only ever looked at
+    // once, right before approval.
+    const folder = record.mode === 'weekly' ? `court${record.courtNum}` : record.finalsSlot;
+    const approvedId = `${dateSlug(resolveDate(record))}/${folder}/${id}`;
+
     const { data: photoBytes, metadata: photoMetadata } = await store.getWithMetadata(`pending/${id}.jpg`, { type: 'arrayBuffer' });
-    await store.set(`approved/${id}.jpg`, Buffer.from(photoBytes), { metadata: photoMetadata });
-    await store.setJSON(`approved/${id}.json`, {
+    await store.set(`approved/${approvedId}.jpg`, Buffer.from(photoBytes), { metadata: photoMetadata });
+    await store.setJSON(`approved/${approvedId}.json`, {
       ...record,
+      id: approvedId,
       approved: { setsA, setsB, gamesA, gamesB, winner: payload.winner },
       approvedAt: new Date().toISOString(),
     });

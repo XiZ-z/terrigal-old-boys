@@ -268,7 +268,7 @@
     const id = imgEl.dataset.photoId;
     const storeName = imgEl.dataset.photoStore;
     try {
-      const res = await fetch(`/.netlify/functions/get-photo?store=${storeName}&id=${id}`, { headers: authHeader() });
+      const res = await fetch(`/.netlify/functions/get-photo?store=${storeName}&id=${encodeURIComponent(id)}`, { headers: authHeader() });
       if (!res.ok) { imgEl.alt = 'Could not load photo'; return; }
       const blob = await res.blob();
       imgEl.src = URL.createObjectURL(blob);
