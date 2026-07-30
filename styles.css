@@ -267,6 +267,11 @@ tbody tr:hover{background:#FBFAF6;}
   margin-top:2px; letter-spacing:0.02em;
 }
 .cap-sep{color:var(--paper-line); margin:0 1px;}
+
+.match-team{display:inline-block; vertical-align:middle; line-height:1.3;}
+.match-team .t-name{display:block;}
+.match-team .t-captain{display:block; font-size:11px; color:var(--ink-soft); font-weight:400;}
+.vs{display:inline-block; margin:0 8px; color:var(--ink-soft); vertical-align:middle;}
 .tie-note.stat-win{color:var(--ink); font-weight:700;}
 .tie-note.stat-loss{color:var(--ink-soft); font-weight:500; opacity:0.85;}
 tr.cut-marker-row td{

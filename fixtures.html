@@ -20,14 +20,6 @@
     <label for="team-filter">Show</label>
     <select id="team-filter">
       <option value="">All teams</option>
-      <option value="1">Team 1</option>
-      <option value="2">Team 2</option>
-      <option value="3">Team 3</option>
-      <option value="4">Team 4</option>
-      <option value="5">Team 5</option>
-      <option value="6">Team 6</option>
-      <option value="7">Team 7</option>
-      <option value="8">Team 8</option>
     </select>
   </div>
   <div id="fixtures-list"></div>
@@ -41,31 +33,40 @@
   // WET while that round is still marked postponed, plain Upcoming
   // otherwise. roundNum drives the RESULTS/bonus lookup; it's the real
   // round number even when the row is rendered under a reserve-week slot.
+  // Team name with captain stacked underneath, so match rows don't wrap
+  // mid-word on narrow screens like "Team 1 (Adam)" inline does.
+  function matchTeamHtml(t){
+    return `<span class="match-team"><span class="t-name">Team ${t}</span><span class="t-captain">${teamCaptain(t)}</span></span>`;
+  }
+  function matchupHtml(a, b){
+    return `${matchTeamHtml(a)}<span class="vs">v</span>${matchTeamHtml(b)}`;
+  }
+
   function renderMatchRow(roundNum, m, slotIdx, court, wet){
     const key = `${roundNum}-${slotIdx}`;
     const r = RESULTS[key];
     if(!r){
       const statusPill = wet ? `<span class="pill wet">WET</span>` : `<span class="pill">Upcoming</span>`;
-      return `<tr><td class="mono-cell">CRT ${court}</td><td>Team ${m[0]} v Team ${m[1]}</td><td colspan="3" class="num-col">${statusPill}</td></tr>`;
+      return `<tr><td class="mono-cell">CRT ${court}</td><td>${matchupHtml(m[0], m[1])}</td><td colspan="3" class="num-col">${statusPill}</td></tr>`;
     }
     const bp = matchPoints(r);
     const setsWinner = bp.setsBonusA === 1 ? null : (bp.setsBonusA ? m[0] : m[1]);
     const gamesWinner = bp.gamesBonusA === 1 ? null : (bp.gamesBonusA ? m[0] : m[1]);
     let bonusHtml;
     if(setsWinner !== null && setsWinner === gamesWinner){
-      bonusHtml = `<span class="pill done">+2 sets &amp; games bonus &rarr; Team ${setsWinner}</span>`;
+      bonusHtml = `<span class="pill done">+2 sets &amp; games bonus &rarr; ${teamLabel(setsWinner)}</span>`;
     } else {
       const setsTxt = setsWinner === null
         ? `<span class="pill">Sets tied · +1 each</span>`
-        : `<span class="pill done">+2 sets &rarr; Team ${setsWinner}</span>`;
+        : `<span class="pill done">+2 sets &rarr; ${teamLabel(setsWinner)}</span>`;
       const gamesTxt = gamesWinner === null
         ? `<span class="pill">Games tied · +1 each</span>`
-        : `<span class="pill done">+2 games &rarr; Team ${gamesWinner}</span>`;
+        : `<span class="pill done">+2 games &rarr; ${teamLabel(gamesWinner)}</span>`;
       bonusHtml = `${setsTxt} ${gamesTxt}`;
     }
     return `<tr>
       <td class="mono-cell">CRT ${court}</td>
-      <td>Team ${m[0]} v Team ${m[1]}</td>
+      <td>${matchupHtml(m[0], m[1])}</td>
       <td class="mono-cell num-col">${r.setsA}&ndash;${r.setsB}</td>
       <td class="mono-cell num-col">${r.gamesA}&ndash;${r.gamesB}</td>
       <td class="mono-cell num-col"><strong>${bp.totalA}&ndash;${bp.totalB}</strong></td>
@@ -124,7 +125,11 @@
     }
     el.innerHTML = html;
   }
-  document.getElementById('team-filter').addEventListener('change', (e) => {
+  const filterSelect = document.getElementById('team-filter');
+  for(let t=1;t<=8;t++){
+    filterSelect.insertAdjacentHTML('beforeend', `<option value="${t}">${teamLabel(t)}</option>`);
+  }
+  filterSelect.addEventListener('change', (e) => {
     renderFixtures(e.target.value ? Number(e.target.value) : null);
   });
   const queryTeam = Number(new URLSearchParams(location.search).get('team'));
