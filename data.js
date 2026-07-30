@@ -1,3 +1,19 @@
+// ---------- Teams ----------
+// First names only, in grade order (1 = strongest) per the club's season
+// roster sheet. This is the fixed squad pool -- only 3 of each team's 4
+// players take the court on any given week (see weekly results). `captain`
+// marks the player shown with (C) on the roster sheet.
+const TEAMS = {
+  1: [{name:"Adam", captain:true}, {name:"Jordan"}, {name:"Cameron"}, {name:"Michael"}],
+  2: [{name:"Ash", captain:true}, {name:"Tony"}, {name:"Bradley"}, {name:"Harrison"}],
+  3: [{name:"Andrew", captain:true}, {name:"Ian"}, {name:"Daniel"}, {name:"Paul"}],
+  4: [{name:"Blake"}, {name:"Max", captain:true}, {name:"Kade"}, {name:"Glenn"}],
+  5: [{name:"Daren", captain:true}, {name:"Sam"}, {name:"Andrew"}, {name:"Ben"}],
+  6: [{name:"Dave", captain:true}, {name:"Will"}, {name:"David"}, {name:"Steve"}],
+  7: [{name:"Dean", captain:true}, {name:"Anthony"}, {name:"Andrew"}, {name:"Charlie"}],
+  8: [{name:"Scott"}, {name:"Matt"}, {name:"Warren", captain:true}, {name:"Gordon"}],
+};
+
 // ---------- Season structure ----------
 // Round-robin pairings by team number, 7 unique rounds repeated twice for 14 rounds
 const BASE_ROUNDS = [
@@ -339,6 +355,7 @@ function computeFinalsState(){
 // `module` global.
 if (typeof module !== 'undefined') {
   module.exports = {
+    TEAMS,
     BASE_ROUNDS, ALL_ROUNDS, DATES, RESERVE_DATES, WET_ROUNDS, FINALS_DATES,
     FINALS_WET_WEEKS, FINALS_STAGE_ORDER, getFinalsDates,
     RESULTS, FINALS_RESULTS,
