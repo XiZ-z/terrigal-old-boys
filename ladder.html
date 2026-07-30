@@ -125,7 +125,7 @@
     const rowHtml = rows.map((r, i) => `
       <tr>
         <td class="rank-cell">${i+1}</td>
-        <td><strong>Team ${r.team}</strong></td>
+        <td><span class="match-team"><span class="t-name"><strong>Team ${r.team}</strong></span><span class="t-captain">${teamCaptain(r.team)}</span></span></td>
         <td class="mono-cell num-col">${r.played}</td>
         <td class="mono-cell num-col">${recordCell(r.form)}</td>
         <td class="mono-cell num-col">${statCell(r.setsFor, r.setsAgainst)}<span class="diff-line">${formatDiff(r.setsFor - r.setsAgainst)}</span></td>
