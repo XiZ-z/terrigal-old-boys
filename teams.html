@@ -28,7 +28,7 @@
     let html = '';
     for(let t=1;t<=8;t++){
       const players = TEAMS[t].map(p => `<div class="player">${p.name}${p.captain ? ' <span class="captain-badge">C</span>' : ''}</div>`).join('');
-      html += `<div class="team-card" id="team-${t}"><div class="name">Team ${t}</div><div class="players">${players}</div></div>`;
+      html += `<a class="team-card" id="team-${t}" href="fixtures.html?team=${t}"><div class="name">Team ${t}</div><div class="players">${players}</div></a>`;
     }
     grid.innerHTML = html;
   }

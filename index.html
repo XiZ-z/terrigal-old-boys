@@ -74,10 +74,11 @@
 
   // "Team N" with captain stacked underneath, matching the Fixtures/Ladder
   // pages. Pass link:true to wrap it as a link to that team's fixtures.
-  function teamChip(t, { link } = {}){
+  function teamChip(t, { link, round } = {}){
     const inner = `<span class="t-name">Team ${t}</span><span class="t-captain">${teamCaptain(t)}</span>`;
+    const anchor = round ? `#round-${round}` : '';
     return link
-      ? `<a href="fixtures.html?team=${t}" class="match-team">${inner}</a>`
+      ? `<a href="fixtures.html?team=${t}${anchor}" class="match-team">${inner}</a>`
       : `<span class="match-team">${inner}</span>`;
   }
 
@@ -92,7 +93,7 @@
         .map((m, slotIdx) => ({ m, court: displayCourt(next.roundNum, slotIdx) }))
         .sort((a, b) => a.court - b.court);
       document.getElementById('home-next-matches').innerHTML = courtsInOrder.map(({m, court})=>
-        `<div class="court-row"><span><span class="tag">CRT ${court}</span><span class="match">${teamChip(m[0], {link:true})}<span class="vs">v</span>${teamChip(m[1], {link:true})}</span></span></div>`
+        `<div class="court-row"><span><span class="tag">CRT ${court}</span><span class="match">${teamChip(m[0], {link:true, round:next.roundNum})}<span class="vs">v</span>${teamChip(m[1], {link:true, round:next.roundNum})}</span></span></div>`
       ).join('');
       return;
     }

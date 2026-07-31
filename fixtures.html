@@ -136,15 +136,40 @@
   const initialTeam = (queryTeam >= 1 && queryTeam <= 8) ? queryTeam : null;
   if(initialTeam) document.getElementById('team-filter').value = String(initialTeam);
   renderFixtures(initialTeam);
-
-  // The browser tries to jump to the URL's #hash before this script has
-  // populated #fixtures-list, so that initial jump lands on nothing --
-  // scroll to the target round manually now that it actually exists.
-  if(location.hash){
-    const target = document.querySelector(location.hash);
-    if(target) target.scrollIntoView({ block: 'start' });
-  }
 </script>
 <script src="nav.js"></script>
+<script>
+  // The browser tries to jump to the URL's #hash before #fixtures-list is
+  // populated (and before nav.js has replaced #nav-placeholder with the
+  // real sticky header), so that initial jump lands on nothing / measures
+  // a header height of zero -- do it manually here, after both are ready.
+  function scrollToHashTarget(){
+    if(!location.hash) return;
+    const target = document.querySelector(location.hash);
+    if(!target) return;
+    // The sticky top nav (its height varies a lot -- it wraps to extra
+    // rows on narrow screens) sits on top of the page, so a plain
+    // scrollIntoView lands the target right underneath it, hidden.
+    // Compute the nav's actual current height and offset for it.
+    const headerHeight = document.querySelector('.topbar').getBoundingClientRect().height;
+    const top = target.getBoundingClientRect().top + window.scrollY - headerHeight - 12;
+    window.scrollTo(0, top);
+    // Briefly glow the round you jumped to, so it's obvious which one a
+    // Records/Home-page link was pointing at among 14 near-identical
+    // blocks.
+    target.classList.add('round-block--highlight');
+    target.addEventListener('animationend', () => target.classList.remove('round-block--highlight'), { once: true });
+  }
+  // Bebas Neue loads async and can grow the header's height (extra
+  // wrapped line) after our first layout pass -- wait for it, otherwise
+  // the scroll offset above is computed against a header that's about to
+  // get taller, landing short. document.fonts is near-universal, but fall
+  // back to running immediately if it's ever unavailable.
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(scrollToHashTarget);
+  } else {
+    scrollToHashTarget();
+  }
+</script>
 </body>
 </html>

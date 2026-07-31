@@ -246,6 +246,14 @@ tbody tr:hover{background:#FBFAF6;}
   padding:10px 10px 2px;
 }
 .round-block--next .table-wrap{border:none;}
+.round-block--highlight{
+  border-radius:16px;
+  animation: round-highlight-flash 2s ease-out 1;
+}
+@keyframes round-highlight-flash{
+  0%{ box-shadow:0 0 0 4px var(--ball); }
+  100%{ box-shadow:0 0 0 0 rgba(207,232,92,0); }
+}
 .crt-col{width:64px;}
 
 @media (max-width:640px){
@@ -339,9 +347,10 @@ body[data-page="ladder"] tbody td{vertical-align:top;}
   display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:14px;
 }
 .team-card{
-  background:var(--white); border:1px solid var(--paper-line); border-radius:12px;
+  display:block; background:var(--white); border:1px solid var(--paper-line); border-radius:12px;
   padding:18px 14px; text-align:center;
   transition:transform .15s ease, box-shadow .15s ease;
+  text-decoration:none; color:inherit;
 }
 .team-card:hover{transform:translateY(-3px); box-shadow:0 12px 20px -14px rgba(18,60,62,0.4);}
 .team-card .ball-dot{width:30px; height:30px; margin:0 auto 10px; position:relative;}
