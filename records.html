@@ -34,10 +34,16 @@
       : { winner: m.teamB, loser: m.teamA, winnerGames: m.gamesB, loserGames: m.gamesA };
   }
 
-  function recordCard({ team, teamClass, label, value, detail }){
-    const badge = team
-      ? `<div class="record-team${teamClass ? ' ' + teamClass : ''}">${team}</div>`
-      : '';
+  function recordCard({ team, captain, teamClass, label, value, detail, href }){
+    const badgeClass = `record-team${teamClass ? ' ' + teamClass : ''}`;
+    const badgeInner = captain
+      ? `<span class="t-name">${team}</span><span class="t-captain">${captain}</span>`
+      : team;
+    const badge = !team
+      ? ''
+      : href
+        ? `<a href="${href}" class="${badgeClass}">${badgeInner}</a>`
+        : `<div class="${badgeClass}">${badgeInner}</div>`;
     return `
       <div class="rule-card record-card">
         ${badge}
@@ -68,9 +74,11 @@
       const bw = winnerLoser(rec.biggestWin);
       cards.push(recordCard({
         team: `Team ${bw.winner}`,
+        captain: teamCaptain(bw.winner),
         label: 'Biggest win margin',
         value: `${rec.biggestWin.gameDiff} games`,
-        detail: `beat Team ${bw.loser} ${bw.winnerGames}&ndash;${bw.loserGames} in Round ${rec.biggestWin.roundNum}`,
+        detail: `beat ${teamLabel(bw.loser)} ${bw.winnerGames}&ndash;${bw.loserGames} in Round ${rec.biggestWin.roundNum}`,
+        href: `fixtures.html?team=${bw.winner}#round-${rec.biggestWin.roundNum}`,
       }));
     }
 
@@ -84,9 +92,11 @@
       const ms = winnerLoser(rec.mostLopsidedSets, false);
       cards.push(recordCard({
         team: `Team ${ms.winner}`,
+        captain: teamCaptain(ms.winner),
         label: 'Most lopsided sets',
         value: `${rec.mostLopsidedSets.setsA}&ndash;${rec.mostLopsidedSets.setsB}`,
-        detail: `over Team ${ms.loser} in Round ${rec.mostLopsidedSets.roundNum}`,
+        detail: `over ${teamLabel(ms.loser)} in Round ${rec.mostLopsidedSets.roundNum}`,
+        href: `fixtures.html?team=${ms.winner}#round-${rec.mostLopsidedSets.roundNum}`,
       }));
     }
 
@@ -97,33 +107,40 @@
         label: 'Closest match',
         value: `Drew on games`,
         detail: `${cl.gamesA}&ndash;${cl.gamesB} in Round ${cl.roundNum}`,
+        href: `fixtures.html?team=${cl.teamA}#round-${cl.roundNum}`,
       }));
     } else {
       const cw = winnerLoser(cl);
       cards.push(recordCard({
         team: `Team ${cw.winner}`,
+        captain: teamCaptain(cw.winner),
         label: 'Closest match',
         value: `${cl.gameDiff} game${cl.gameDiff === 1 ? '' : 's'}`,
-        detail: `beat Team ${cw.loser} ${cw.winnerGames}&ndash;${cw.loserGames} in Round ${cl.roundNum}`,
+        detail: `beat ${teamLabel(cw.loser)} ${cw.winnerGames}&ndash;${cw.loserGames} in Round ${cl.roundNum}`,
+        href: `fixtures.html?team=${cw.winner}#round-${cl.roundNum}`,
       }));
     }
 
     if(rec.bestWinStreak){
       cards.push(recordCard({
         team: `Team ${rec.bestWinStreak.team}`,
+        captain: teamCaptain(rec.bestWinStreak.team),
         label: 'Longest win streak',
         value: `${rec.bestWinStreak.streak} match${rec.bestWinStreak.streak === 1 ? '' : 'es'}`,
         detail: `and counting`,
+        href: `fixtures.html?team=${rec.bestWinStreak.team}`,
       }));
     }
 
     if(rec.bestLossStreak){
       cards.push(recordCard({
         team: `Team ${rec.bestLossStreak.team}`,
+        captain: teamCaptain(rec.bestLossStreak.team),
         teamClass: 'record-team--loss',
         label: 'Longest losing streak',
         value: `${rec.bestLossStreak.streak} match${rec.bestLossStreak.streak === 1 ? '' : 'es'}`,
         detail: `due a win`,
+        href: `fixtures.html?team=${rec.bestLossStreak.team}`,
       }));
     }
 

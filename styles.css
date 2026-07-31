@@ -145,9 +145,14 @@ main{max-width:1080px; margin:0 auto; padding:32px 20px 80px;}
 .champion-trophy{width:54px; height:54px; flex:0 0 auto;}
 .champion-text{display:flex; flex-direction:column; gap:7px;}
 .champion-pill{
-  display:inline-block; font-family:'Bebas Neue'; font-size:30px; letter-spacing:0.01em;
+  display:inline-flex; flex-direction:column; align-items:center;
+  font-family:'Bebas Neue'; font-size:30px; letter-spacing:0.01em; line-height:1.15;
   background:var(--ball); color:var(--court-dark);
   padding:5px 16px; border-radius:9px; width:fit-content;
+}
+.champion-pill .t-captain{
+  font-family:'IBM Plex Sans'; font-size:11px; font-weight:600; letter-spacing:0;
+  color:var(--court-dark);
 }
 .champion-label{
   font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em;
@@ -268,9 +273,10 @@ tbody tr:hover{background:#FBFAF6;}
 }
 .cap-sep{color:var(--paper-line); margin:0 1px;}
 
-.match-team{display:inline-block; vertical-align:middle; line-height:1.3;}
+.match-team{display:inline-block; vertical-align:middle; line-height:1.3; text-decoration:none; color:inherit;}
 .match-team .t-name{display:block;}
-.match-team .t-captain{display:block; font-size:11px; color:var(--ink-soft); font-weight:400;}
+.match-team .t-captain{display:block; font-size:11px; color:var(--ink-soft); font-weight:400; font-family:'IBM Plex Sans';}
+.match-team:hover .t-name{text-decoration:underline;}
 .vs{display:inline-block; margin:0 8px; color:var(--ink-soft); vertical-align:middle;}
 .tie-note.stat-win{color:var(--ink); font-weight:700;}
 .tie-note.stat-loss{color:var(--ink-soft); font-weight:500; opacity:0.85;}
@@ -305,11 +311,18 @@ body[data-page="ladder"] tbody td{vertical-align:top;}
   display:grid; grid-template-columns:repeat(auto-fill, minmax(220px,1fr)); gap:16px;
 }
 .record-team{
-  display:inline-block; font-family:'Bebas Neue'; font-size:19px; letter-spacing:0.01em;
+  display:inline-flex; flex-direction:column; align-items:center;
+  font-family:'Bebas Neue'; font-size:19px; letter-spacing:0.01em; line-height:1.15;
   background:var(--ball); color:var(--court-dark);
   padding:3px 12px; border-radius:7px; margin-bottom:8px;
+  text-decoration:none;
 }
 .record-team.record-team--loss{background:var(--clay); color:var(--white);}
+.record-team .t-captain{
+  font-family:'IBM Plex Sans'; font-size:11px; font-weight:600; letter-spacing:0;
+  color:var(--court-dark);
+}
+.record-team--loss .t-captain{color:var(--white);}
 .record-card h4{
   font-family:'IBM Plex Sans'; font-size:12px; font-weight:600;
   text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft);
@@ -375,9 +388,10 @@ body[data-page="ladder"] tbody td{vertical-align:top;}
 .bmatch-winner{
   display:inline-block; font-family:'Bebas Neue'; font-size:17px; letter-spacing:0.01em;
   background:var(--ball); color:var(--court-dark);
-  padding:3px 12px; border-radius:7px;
+  padding:3px 12px; border-radius:7px; text-align:center;
 }
-.bmatch-loser{font-family:'Bebas Neue'; font-size:17px; letter-spacing:0.01em; color:var(--ink-soft);}
+.bmatch-winner .t-captain{color:var(--court-dark);}
+.bmatch-loser{display:inline-block; font-family:'Bebas Neue'; font-size:17px; letter-spacing:0.01em; color:var(--ink-soft); text-align:center;}
 .bmatch-vs{font-size:10.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft); font-weight:500;}
 .bmatch-score{font-family:'IBM Plex Mono'; font-size:12.5px; color:var(--ink-soft); margin-top:7px;}
 .bracket-wildcard{font-size:11.5px; color:var(--ink-soft); margin:10px 2px 0; font-style:italic;}
@@ -495,6 +509,7 @@ footer{
   background:var(--court); color:var(--white);
   padding:6px 16px; border-radius:8px; white-space:nowrap;
 }
+.matchup-card .team-pill .t-captain{color:var(--white);}
 .matchup-card .vs{
   font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em;
   color:var(--ink-soft);

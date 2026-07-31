@@ -36,7 +36,7 @@
   // Team name with captain stacked underneath, so match rows don't wrap
   // mid-word on narrow screens like "Team 1 (Adam)" inline does.
   function matchTeamHtml(t){
-    return `<span class="match-team"><span class="t-name">Team ${t}</span><span class="t-captain">${teamCaptain(t)}</span></span>`;
+    return `<a href="teams.html#team-${t}" class="match-team"><span class="t-name">Team ${t}</span><span class="t-captain">${teamCaptain(t)}</span></a>`;
   }
   function matchupHtml(a, b){
     return `${matchTeamHtml(a)}<span class="vs">v</span>${matchTeamHtml(b)}`;
@@ -83,7 +83,7 @@
       .filter(({ m }) => !teamFilter || m[0] === teamFilter || m[1] === teamFilter)
       .sort((a, b) => a.court - b.court);
     if(teamFilter && courtsInOrder.length === 0) return '';
-    let html = `<div class="round-block${extraClass || ''}"><div class="round-head"><span class="round-num">RD ${label}</span><span class="round-date">${dateLabel}</span>${headTags || ''}</div>`;
+    let html = `<div class="round-block${extraClass || ''}" id="round-${roundNum}"><div class="round-head"><span class="round-num">RD ${label}</span><span class="round-date">${dateLabel}</span>${headTags || ''}</div>`;
     html += `<div class="table-wrap"><table><thead><tr><th class="crt-col">Crt</th><th>Match</th><th class="num-col">Sets</th><th class="num-col">Games</th><th class="num-col">Points</th></tr></thead><tbody>`;
     courtsInOrder.forEach(({ m, slotIdx, court }) => { html += renderMatchRow(roundNum, m, slotIdx, court, wet); });
     html += `</tbody></table></div></div>`;
@@ -136,6 +136,14 @@
   const initialTeam = (queryTeam >= 1 && queryTeam <= 8) ? queryTeam : null;
   if(initialTeam) document.getElementById('team-filter').value = String(initialTeam);
   renderFixtures(initialTeam);
+
+  // The browser tries to jump to the URL's #hash before this script has
+  // populated #fixtures-list, so that initial jump lands on nothing --
+  // scroll to the target round manually now that it actually exists.
+  if(location.hash){
+    const target = document.querySelector(location.hash);
+    if(target) target.scrollIntoView({ block: 'start' });
+  }
 </script>
 <script src="nav.js"></script>
 </body>

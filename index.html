@@ -72,6 +72,15 @@
     final:       { title: 'Grand Final',        date: finalsDates.grandFinal.date,  wet: finalsDates.grandFinal.weeksDelayed > 0,  slots: [['F', 'final']] },
   };
 
+  // "Team N" with captain stacked underneath, matching the Fixtures/Ladder
+  // pages. Pass link:true to wrap it as a link to that team's fixtures.
+  function teamChip(t, { link } = {}){
+    const inner = `<span class="t-name">Team ${t}</span><span class="t-captain">${teamCaptain(t)}</span>`;
+    return link
+      ? `<a href="fixtures.html?team=${t}" class="match-team">${inner}</a>`
+      : `<span class="match-team">${inner}</span>`;
+  }
+
   function renderHomeNext(){
     const scorecard = document.getElementById('scorecard');
     const next = getNextRound();
@@ -83,7 +92,7 @@
         .map((m, slotIdx) => ({ m, court: displayCourt(next.roundNum, slotIdx) }))
         .sort((a, b) => a.court - b.court);
       document.getElementById('home-next-matches').innerHTML = courtsInOrder.map(({m, court})=>
-        `<div class="court-row"><span><span class="tag">CRT ${court}</span><span class="match"><a href="fixtures.html?team=${m[0]}">Team ${m[0]}</a> v <a href="fixtures.html?team=${m[1]}">Team ${m[1]}</a></span></span></div>`
+        `<div class="court-row"><span><span class="tag">CRT ${court}</span><span class="match">${teamChip(m[0], {link:true})}<span class="vs">v</span>${teamChip(m[1], {link:true})}</span></span></div>`
       ).join('');
       return;
     }
@@ -120,7 +129,7 @@
     document.getElementById('next-round-date').innerHTML = `Wednesday, ${meta.date}${wetPill}`;
     document.getElementById('home-next-matches').innerHTML = meta.slots.map(([tag, slot]) => {
       const s = state[slot];
-      const label = s ? `Team ${s.teamA} v Team ${s.teamB}` : 'To be decided';
+      const label = s ? `${teamChip(s.teamA)}<span class="vs">v</span>${teamChip(s.teamB)}` : 'To be decided';
       return `<div class="court-row"><span><span class="tag">${tag}</span><span class="match"><a href="finals.html">${label}</a></span></span></div>`;
     }).join('');
   }
@@ -142,7 +151,7 @@
       <div class="champion-row">
         ${TROPHY_SVG}
         <div class="champion-text">
-          <span class="champion-pill">Team ${team}</span>
+          <span class="champion-pill"><span class="t-name">Team ${team}</span><span class="t-captain">${teamCaptain(team)}</span></span>
           <span class="champion-label"><a href="finals.html">2026 Season 2 Champions</a></span>
         </div>
       </div>`;
@@ -164,7 +173,7 @@
       const dots = recent.length
         ? recent.map(o => `<span class="form-dot ${dotClass[o]}">${dotLabel[o]}</span>`).join('')
         : `<span class="form-dot form-dot--empty">&ndash;</span>`;
-      return `<div class="form-row"><span class="form-rank">${i+1}</span><span class="form-team"><a href="fixtures.html?team=${r.team}">Team ${r.team}</a></span><span class="form-dots">${dots}</span></div>`;
+      return `<div class="form-row"><span class="form-rank">${i+1}</span><span class="form-team">${teamChip(r.team, {link:true})}</span><span class="form-dots">${dots}</span></div>`;
     }).join('');
   }
   // Covers the whole season arc, not just the round robin -- once the 14

@@ -106,7 +106,65 @@ function getFinalsDates(){
 // setsA/setsB: out of 6 total sets, can include .5 (a 4-4 set is a draw).
 // gamesA/gamesB: total games across all 6 sets, always sums to 48.
 const RESULTS = {
-  // Cleared for the real season -- add real results here once played.
+  // Sample data for the dev preview branch only -- a full completed season
+  // so the site can be shown off with real-looking ladder/records/finals.
+  // main stays cleared until actual Round 1 results come in.
+  "1-0": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "1-1": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "1-2": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "1-3": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "2-0": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "2-1": { setsA: 1, setsB: 2, gamesA: 14, gamesB: 18 },
+  "2-2": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "2-3": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "3-0": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "3-1": { setsA: 1, setsB: 2, gamesA: 14, gamesB: 18 },
+  "3-2": { setsA: 1, setsB: 2, gamesA: 14, gamesB: 18 },
+  "3-3": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "4-0": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "4-1": { setsA: 1, setsB: 2, gamesA: 14, gamesB: 18 },
+  "4-2": { setsA: 1, setsB: 2, gamesA: 14, gamesB: 18 },
+  "4-3": { setsA: 1, setsB: 2, gamesA: 14, gamesB: 18 },
+  "5-0": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "5-1": { setsA: 1, setsB: 2, gamesA: 14, gamesB: 18 },
+  "5-2": { setsA: 1, setsB: 2, gamesA: 14, gamesB: 18 },
+  "5-3": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "6-0": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "6-1": { setsA: 1, setsB: 2, gamesA: 14, gamesB: 18 },
+  "6-2": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "6-3": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "7-0": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "7-1": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "7-2": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "7-3": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "8-0": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "8-1": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "8-2": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "8-3": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "9-0": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "9-1": { setsA: 1, setsB: 2, gamesA: 14, gamesB: 18 },
+  "9-2": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "9-3": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "10-0": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "10-1": { setsA: 1, setsB: 2, gamesA: 14, gamesB: 18 },
+  "10-2": { setsA: 1, setsB: 2, gamesA: 14, gamesB: 18 },
+  "10-3": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "11-0": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "11-1": { setsA: 1, setsB: 2, gamesA: 14, gamesB: 18 },
+  "11-2": { setsA: 1, setsB: 2, gamesA: 14, gamesB: 18 },
+  "11-3": { setsA: 1, setsB: 2, gamesA: 14, gamesB: 18 },
+  "12-0": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "12-1": { setsA: 1, setsB: 2, gamesA: 14, gamesB: 18 },
+  "12-2": { setsA: 1, setsB: 2, gamesA: 14, gamesB: 18 },
+  "12-3": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "13-0": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "13-1": { setsA: 1, setsB: 2, gamesA: 14, gamesB: 18 },
+  "13-2": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "13-3": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "14-0": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "14-1": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "14-2": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
+  "14-3": { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14 },
 };
 
 // ---------- Court display ----------
@@ -306,7 +364,13 @@ function getRoundsPlayed(){
 // and games after bonus points is settled by a tiebreaker set that isn't
 // otherwise captured in those four numbers (finals only).
 const FINALS_RESULTS = {
-  // Cleared for the real season -- add real results here once played.
+  // Sample data for the dev preview branch only -- see RESULTS above.
+  game1: { setsA: 2, setsB: 1, gamesA: 18, gamesB: 14, winner: 'A' },
+  game2: { setsA: 2, setsB: 1, gamesA: 17, gamesB: 15, winner: 'A' },
+  game3: { setsA: 2, setsB: 1, gamesA: 16, gamesB: 16, winner: 'A' },
+  semi1: { setsA: 2, setsB: 0, gamesA: 18, gamesB: 10, winner: 'A' },
+  semi2: { setsA: 2, setsB: 1, gamesA: 17, gamesB: 15, winner: 'A' },
+  final: { setsA: 2, setsB: 1, gamesA: 16, gamesB: 14, winner: 'A' },
 };
 
 // Resolves each bracket slot's actual teams (from ladder seeding and prior

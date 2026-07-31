@@ -84,6 +84,13 @@
     return `${n}th`;
   }
 
+  // "Team N" with captain stacked underneath, matching Fixtures/Ladder/Home.
+  // Links to that team's fixtures/results, same as Home's recent-form list.
+  function teamChip(t){
+    const inner = `<span class="t-name">Team ${t}</span><span class="t-captain">${teamCaptain(t)}</span>`;
+    return `<a href="fixtures.html?team=${t}" class="match-team">${inner}</a>`;
+  }
+
   const SLOT_META = {
     game1: { rank: [1, 6] },
     game2: { rank: [2, 5] },
@@ -111,7 +118,7 @@
       const rankSuffix = meta.rank
         ? ` <span class="bracket-rank">(${ordinal(meta.rank[0])} v ${ordinal(meta.rank[1])})</span>`
         : '';
-      el.innerHTML = `Team ${s.teamA} v Team ${s.teamB}${rankSuffix}`;
+      el.innerHTML = `${teamChip(s.teamA)}<span class="vs">v</span>${teamChip(s.teamB)}${rankSuffix}`;
       return;
     }
 
@@ -122,9 +129,9 @@
     const winGames = winnerIsA ? r.gamesA : r.gamesB, loseGames = winnerIsA ? r.gamesB : r.gamesA;
     el.innerHTML = `
       <div class="bmatch-result">
-        <span class="bmatch-winner">Team ${s.winner}</span>
+        <span class="bmatch-winner">${teamChip(s.winner)}</span>
         <span class="bmatch-vs">def</span>
-        <span class="bmatch-loser">Team ${loser}</span>
+        <span class="bmatch-loser">${teamChip(loser)}</span>
       </div>
       <div class="bmatch-score">${winSets}&ndash;${loseSets} sets &middot; ${winGames}&ndash;${loseGames} games</div>
     `;
@@ -151,7 +158,7 @@
     banner.innerHTML = `
       ${TROPHY_SVG}
       <div class="champion-text">
-        <span class="champion-pill">Team ${state.final.winner}</span>
+        <span class="champion-pill"><span class="t-name">Team ${state.final.winner}</span><span class="t-captain">${teamCaptain(state.final.winner)}</span></span>
         <span class="champion-label">2026 Season 2 Champions</span>
       </div>`;
   }

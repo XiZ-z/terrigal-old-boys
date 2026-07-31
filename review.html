@@ -63,6 +63,7 @@
 
 <div id="footer-placeholder"></div>
 
+<script src="data.js"></script>
 <script src="nav.js"></script>
 <script>
   const authGate = document.getElementById('auth-gate');
@@ -243,8 +244,8 @@
           </div>`;
       }
 
-      const teamA = item.teamA ? `Team ${item.teamA}` : 'Team A';
-      const teamB = item.teamB ? `Team ${item.teamB}` : 'Team B';
+      const teamA = item.teamA ? teamLabel(item.teamA) : 'Team A';
+      const teamB = item.teamB ? teamLabel(item.teamB) : 'Team B';
       const matchup = `${teamA} v ${teamB}`;
       const label = item.mode === 'finals'
         ? `Finals — ${item.finalsSlot} — ${matchup}`
@@ -331,8 +332,8 @@
           </div>`;
       }
 
-      const teamA = item.teamA ? `Team ${item.teamA}` : 'Team A';
-      const teamB = item.teamB ? `Team ${item.teamB}` : 'Team B';
+      const teamA = item.teamA ? teamLabel(item.teamA) : 'Team A';
+      const teamB = item.teamB ? teamLabel(item.teamB) : 'Team B';
       const matchup = `${teamA} v ${teamB}`;
       const label = item.mode === 'finals'
         ? `Finals — ${item.finalsSlot} — ${matchup}`
