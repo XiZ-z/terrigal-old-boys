@@ -20,14 +20,6 @@
     <label for="team-filter">Show</label>
     <select id="team-filter">
       <option value="">All teams</option>
-      <option value="1">Team 1</option>
-      <option value="2">Team 2</option>
-      <option value="3">Team 3</option>
-      <option value="4">Team 4</option>
-      <option value="5">Team 5</option>
-      <option value="6">Team 6</option>
-      <option value="7">Team 7</option>
-      <option value="8">Team 8</option>
     </select>
   </div>
   <div id="fixtures-list"></div>
@@ -41,31 +33,40 @@
   // WET while that round is still marked postponed, plain Upcoming
   // otherwise. roundNum drives the RESULTS/bonus lookup; it's the real
   // round number even when the row is rendered under a reserve-week slot.
+  // Team name with captain stacked underneath, so match rows don't wrap
+  // mid-word on narrow screens like "Team 1 (Adam)" inline does.
+  function matchTeamHtml(t){
+    return `<a href="teams.html#team-${t}" class="match-team"><span class="t-name">Team ${t}</span><span class="t-captain">${teamCaptain(t)}</span></a>`;
+  }
+  function matchupHtml(a, b){
+    return `${matchTeamHtml(a)}<span class="vs">v</span>${matchTeamHtml(b)}`;
+  }
+
   function renderMatchRow(roundNum, m, slotIdx, court, wet){
     const key = `${roundNum}-${slotIdx}`;
     const r = RESULTS[key];
     if(!r){
       const statusPill = wet ? `<span class="pill wet">WET</span>` : `<span class="pill">Upcoming</span>`;
-      return `<tr><td class="mono-cell">CRT ${court}</td><td>Team ${m[0]} v Team ${m[1]}</td><td colspan="3" class="num-col">${statusPill}</td></tr>`;
+      return `<tr><td class="mono-cell">CRT ${court}</td><td>${matchupHtml(m[0], m[1])}</td><td colspan="3" class="num-col">${statusPill}</td></tr>`;
     }
     const bp = matchPoints(r);
     const setsWinner = bp.setsBonusA === 1 ? null : (bp.setsBonusA ? m[0] : m[1]);
     const gamesWinner = bp.gamesBonusA === 1 ? null : (bp.gamesBonusA ? m[0] : m[1]);
     let bonusHtml;
     if(setsWinner !== null && setsWinner === gamesWinner){
-      bonusHtml = `<span class="pill done">+2 sets &amp; games bonus &rarr; Team ${setsWinner}</span>`;
+      bonusHtml = `<span class="pill done">+2 sets &amp; games bonus &rarr; ${teamLabel(setsWinner)}</span>`;
     } else {
       const setsTxt = setsWinner === null
         ? `<span class="pill">Sets tied · +1 each</span>`
-        : `<span class="pill done">+2 sets &rarr; Team ${setsWinner}</span>`;
+        : `<span class="pill done">+2 sets &rarr; ${teamLabel(setsWinner)}</span>`;
       const gamesTxt = gamesWinner === null
         ? `<span class="pill">Games tied · +1 each</span>`
-        : `<span class="pill done">+2 games &rarr; Team ${gamesWinner}</span>`;
+        : `<span class="pill done">+2 games &rarr; ${teamLabel(gamesWinner)}</span>`;
       bonusHtml = `${setsTxt} ${gamesTxt}`;
     }
     return `<tr>
       <td class="mono-cell">CRT ${court}</td>
-      <td>Team ${m[0]} v Team ${m[1]}</td>
+      <td>${matchupHtml(m[0], m[1])}</td>
       <td class="mono-cell num-col">${r.setsA}&ndash;${r.setsB}</td>
       <td class="mono-cell num-col">${r.gamesA}&ndash;${r.gamesB}</td>
       <td class="mono-cell num-col"><strong>${bp.totalA}&ndash;${bp.totalB}</strong></td>
@@ -82,7 +83,7 @@
       .filter(({ m }) => !teamFilter || m[0] === teamFilter || m[1] === teamFilter)
       .sort((a, b) => a.court - b.court);
     if(teamFilter && courtsInOrder.length === 0) return '';
-    let html = `<div class="round-block${extraClass || ''}"><div class="round-head"><span class="round-num">RD ${label}</span><span class="round-date">${dateLabel}</span>${headTags || ''}</div>`;
+    let html = `<div class="round-block${extraClass || ''}" id="round-${roundNum}"><div class="round-head"><span class="round-num">RD ${label}</span><span class="round-date">${dateLabel}</span>${headTags || ''}</div>`;
     html += `<div class="table-wrap"><table><thead><tr><th class="crt-col">Crt</th><th>Match</th><th class="num-col">Sets</th><th class="num-col">Games</th><th class="num-col">Points</th></tr></thead><tbody>`;
     courtsInOrder.forEach(({ m, slotIdx, court }) => { html += renderMatchRow(roundNum, m, slotIdx, court, wet); });
     html += `</tbody></table></div></div>`;
@@ -124,7 +125,11 @@
     }
     el.innerHTML = html;
   }
-  document.getElementById('team-filter').addEventListener('change', (e) => {
+  const filterSelect = document.getElementById('team-filter');
+  for(let t=1;t<=8;t++){
+    filterSelect.insertAdjacentHTML('beforeend', `<option value="${t}">${teamLabel(t)}</option>`);
+  }
+  filterSelect.addEventListener('change', (e) => {
     renderFixtures(e.target.value ? Number(e.target.value) : null);
   });
   const queryTeam = Number(new URLSearchParams(location.search).get('team'));
@@ -133,5 +138,38 @@
   renderFixtures(initialTeam);
 </script>
 <script src="nav.js"></script>
+<script>
+  // The browser tries to jump to the URL's #hash before #fixtures-list is
+  // populated (and before nav.js has replaced #nav-placeholder with the
+  // real sticky header), so that initial jump lands on nothing / measures
+  // a header height of zero -- do it manually here, after both are ready.
+  function scrollToHashTarget(){
+    if(!location.hash) return;
+    const target = document.querySelector(location.hash);
+    if(!target) return;
+    // The sticky top nav (its height varies a lot -- it wraps to extra
+    // rows on narrow screens) sits on top of the page, so a plain
+    // scrollIntoView lands the target right underneath it, hidden.
+    // Compute the nav's actual current height and offset for it.
+    const headerHeight = document.querySelector('.topbar').getBoundingClientRect().height;
+    const top = target.getBoundingClientRect().top + window.scrollY - headerHeight - 12;
+    window.scrollTo(0, top);
+    // Briefly glow the round you jumped to, so it's obvious which one a
+    // Records/Home-page link was pointing at among 14 near-identical
+    // blocks.
+    target.classList.add('round-block--highlight');
+    target.addEventListener('animationend', () => target.classList.remove('round-block--highlight'), { once: true });
+  }
+  // Bebas Neue loads async and can grow the header's height (extra
+  // wrapped line) after our first layout pass -- wait for it, otherwise
+  // the scroll offset above is computed against a header that's about to
+  // get taller, landing short. document.fonts is near-universal, but fall
+  // back to running immediately if it's ever unavailable.
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(scrollToHashTarget);
+  } else {
+    scrollToHashTarget();
+  }
+</script>
 </body>
 </html>

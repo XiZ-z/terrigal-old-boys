@@ -14,6 +14,18 @@ const TEAMS = {
   8: [{name:"Scott"}, {name:"Matt"}, {name:"Warren", captain:true}, {name:"Gordon"}],
 };
 
+function teamCaptain(t){
+  const c = TEAMS[t].find(p => p.captain);
+  return c ? c.name : null;
+}
+
+// "Team 1 (Adam)" -- used anywhere a team number is displayed so it's
+// obvious whose team is whose, without repeating the full roster.
+function teamLabel(t){
+  const c = teamCaptain(t);
+  return c ? `Team ${t} (${c})` : `Team ${t}`;
+}
+
 // ---------- Season structure ----------
 // Round-robin pairings by team number, 7 unique rounds repeated twice for 14 rounds
 const BASE_ROUNDS = [
@@ -355,7 +367,7 @@ function computeFinalsState(){
 // `module` global.
 if (typeof module !== 'undefined') {
   module.exports = {
-    TEAMS,
+    TEAMS, teamCaptain, teamLabel,
     BASE_ROUNDS, ALL_ROUNDS, DATES, RESERVE_DATES, WET_ROUNDS, FINALS_DATES,
     FINALS_WET_WEEKS, FINALS_STAGE_ORDER, getFinalsDates,
     RESULTS, FINALS_RESULTS,
