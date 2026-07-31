@@ -30,8 +30,8 @@
     const aVal = useGames ? m.gamesA : m.setsA;
     const bVal = useGames ? m.gamesB : m.setsB;
     return aVal > bVal
-      ? { winner: m.teamA, loser: m.teamB, winnerGames: m.gamesA, loserGames: m.gamesB }
-      : { winner: m.teamB, loser: m.teamA, winnerGames: m.gamesB, loserGames: m.gamesA };
+      ? { winner: m.teamA, loser: m.teamB, winnerGames: m.gamesA, loserGames: m.gamesB, winnerSets: m.setsA, loserSets: m.setsB }
+      : { winner: m.teamB, loser: m.teamA, winnerGames: m.gamesB, loserGames: m.gamesA, winnerSets: m.setsB, loserSets: m.setsA };
   }
 
   function recordCard({ team, captain, teamClass, label, value, detail, href }){
@@ -94,7 +94,7 @@
         team: `Team ${ms.winner}`,
         captain: teamCaptain(ms.winner),
         label: 'Most lopsided sets',
-        value: `${rec.mostLopsidedSets.setsA}&ndash;${rec.mostLopsidedSets.setsB}`,
+        value: `${ms.winnerSets}&ndash;${ms.loserSets}`,
         detail: `over ${teamLabel(ms.loser)} in Round ${rec.mostLopsidedSets.roundNum}`,
         href: `fixtures.html?team=${ms.winner}#round-${rec.mostLopsidedSets.roundNum}`,
       }));
