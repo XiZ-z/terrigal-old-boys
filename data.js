@@ -56,6 +56,7 @@ const RESERVE_DATES = ["11 Nov 2026", "18 Nov 2026"];
 // like any other completed round.
 const WET_ROUNDS = {
   // 5: "11 Nov 2026",
+  1: "11 Nov 2026",
 };
 
 const FINALS_DATES = {
