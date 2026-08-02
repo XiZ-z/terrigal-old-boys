@@ -130,7 +130,7 @@ const RESULTS = {
   "5-1": { setsA: 2.5, setsB: 3.5, gamesA: 16, gamesB: 32 },
   "5-2": { setsA: 4, setsB: 2, gamesA: 30, gamesB: 18 },
   "5-3": { setsA: 4, setsB: 2, gamesA: 28, gamesB: 20 },
-  "6-0": { setsA: 5, setsB: 1, gamesA: 36, gamesB: 12 },
+  "6-0": { setsA: 3, setsB: 3, gamesA: 31, gamesB: 17 },
   "6-1": { setsA: 1, setsB: 5, gamesA: 18, gamesB: 30 },
   "6-2": { setsA: 4.5, setsB: 1.5, gamesA: 30, gamesB: 18 },
   "6-3": { setsA: 3.5, setsB: 2.5, gamesA: 22, gamesB: 26 },
