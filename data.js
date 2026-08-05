@@ -109,6 +109,7 @@ const RESULTS = {
   // Cleared for the real season -- add real results here once played.
   "1-2": { setsA: 3, setsB: 3, gamesA: 24, gamesB: 24 },
   "1-3": { setsA: 1.5, setsB: 4.5, gamesA: 19, gamesB: 29 },
+  "1-1": { setsA: 5.5, setsB: 0.5, gamesA: 35, gamesB: 13 },
 };
 
 // ---------- Court display ----------
