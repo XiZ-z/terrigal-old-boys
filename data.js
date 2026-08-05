@@ -107,6 +107,7 @@ function getFinalsDates(){
 // gamesA/gamesB: total games across all 6 sets, always sums to 48.
 const RESULTS = {
   // Cleared for the real season -- add real results here once played.
+  "1-2": { setsA: 3, setsB: 3, gamesA: 24, gamesB: 24 },
 };
 
 // ---------- Court display ----------
