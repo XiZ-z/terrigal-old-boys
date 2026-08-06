@@ -471,6 +471,20 @@ footer{
   display:block; font-size:12px; font-weight:600; text-transform:uppercase;
   letter-spacing:0.06em; color:var(--ink-soft); margin-bottom:6px;
 }
+.visually-hidden-file{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+}
+/* Higher specificity than .field-row label so the button look below
+   wins over the generic small-uppercase field label styling. */
+.field-row .file-btn{
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  padding:12px 16px; border-radius:8px; border:1.5px solid var(--paper-line);
+  background:var(--white); color:var(--ink); font-size:15px; font-weight:600;
+  text-transform:none; letter-spacing:normal; cursor:pointer; margin-bottom:0;
+}
+.field-row .file-btn:hover{border-color:var(--ball-dark);}
+.photo-filename{margin-top:8px; font-size:12.5px; color:var(--ink-soft);}
 .field-row select, .field-row input[type="number"], .field-row input[type="file"], .field-row input[type="password"]{
   /* font-size must stay >=16px -- anything smaller makes iOS Safari
      auto-zoom in when the field is focused, and the zoom then just

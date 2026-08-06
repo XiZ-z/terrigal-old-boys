@@ -90,7 +90,9 @@
 
       <div id="photo-field" class="field-row">
         <label for="photo">Photo of the whole score sheet</label>
-        <input type="file" id="photo" name="photo" accept="image/*" capture="environment">
+        <label for="photo" class="file-btn">📷 Take Photo</label>
+        <input type="file" id="photo" name="photo" accept="image/*" capture="environment" class="visually-hidden-file">
+        <div id="photo-filename" class="photo-filename"></div>
       </div>
 
       <button type="submit" class="btn btn-primary" id="submit-btn">Submit for review</button>
@@ -166,6 +168,13 @@
   const wetFields = document.getElementById('wet-fields');
   const photoField = document.getElementById('photo-field');
   const photoInput = document.getElementById('photo');
+  const photoFilename = document.getElementById('photo-filename');
+  // The styled "Take Photo" button replaces the native file input's own
+  // "No file chosen" text, so this is the only feedback that a photo was
+  // actually picked.
+  photoInput.addEventListener('change', () => {
+    photoFilename.textContent = photoInput.files[0] ? `✓ ${photoInput.files[0].name}` : '';
+  });
   const matchupPreview = document.getElementById('matchup-preview');
   const courtSelect = document.getElementById('court-num');
   const finalsSlotSelect = document.getElementById('finals-slot');
@@ -467,6 +476,7 @@
         status.textContent = statusText;
         showSuccessModal(mode === 'wet' ? 'Reported!' : 'Thanks — Submitted!', modalHTML);
         form.reset();
+        photoFilename.textContent = '';
         setMode(mode);
       }
     } catch (err) {
