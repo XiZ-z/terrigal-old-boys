@@ -56,12 +56,7 @@
         <div class="field-row">
           <label for="finals-slot">Finals Match</label>
           <select id="finals-slot" name="finalsSlot">
-            <option value="game1">Elimination — Game 1</option>
-            <option value="game2">Elimination — Game 2</option>
-            <option value="game3">Elimination — Game 3</option>
-            <option value="semi1">Semi Final 1</option>
-            <option value="semi2">Semi Final 2</option>
-            <option value="final">Grand Final</option>
+            <!-- populated by script -->
           </select>
         </div>
       </div>
@@ -95,7 +90,7 @@
 
       <div id="photo-field" class="field-row">
         <label for="photo">Photo of the whole score sheet</label>
-        <input type="file" id="photo" name="photo" accept="image/*">
+        <input type="file" id="photo" name="photo" accept="image/*" capture="environment">
       </div>
 
       <button type="submit" class="btn btn-primary" id="submit-btn">Submit for review</button>
@@ -104,6 +99,15 @@
     </form>
   </div>
 </main>
+
+<div id="success-modal" class="modal-overlay" style="display:none;">
+  <div class="modal-card">
+    <div class="modal-icon">✓</div>
+    <h3 id="success-modal-title">Thanks — Submitted!</h3>
+    <div id="success-modal-body"></div>
+    <button type="button" class="btn btn-primary" id="success-modal-close">Done</button>
+  </div>
+</div>
 
 <div id="footer-placeholder"></div>
 
@@ -116,9 +120,15 @@
     // always entered under their original round number (not the reserve
     // date they're actually played on), so this is the only cue that
     // "Round 5" is the one to pick during a make-up week.
-    return WET_ROUNDS.hasOwnProperty(i)
+    const base = WET_ROUNDS.hasOwnProperty(i)
       ? (WET_ROUNDS[i] ? `☔ Round ${i} — WET replay (${WET_ROUNDS[i]})` : `☔ Round ${i} — WET, no replay`)
       : `Round ${i} — ${DATES[i - 1]}`;
+    // A checkmark, not strikethrough -- iOS Safari's native picker doesn't
+    // render CSS on <option> elements, so any styling would be invisible
+    // on the phones this actually gets used on. Plain-text prefix works
+    // everywhere. Applies equally to a WET round once its replay result
+    // is in, since roundIsPlayed() just checks RESULTS either way.
+    return roundIsPlayed(i) ? `✓ ${base} (played)` : base;
   }
 
   const roundSelect = document.getElementById('round-num');
@@ -131,6 +141,11 @@
       select.appendChild(opt);
     });
   }
+  // Default to whichever round still needs results in (same "next round"
+  // logic the rest of the site uses), so whoever's uploading each week
+  // doesn't have to manually change it off Round 1 every time.
+  const nextRound = getNextRound();
+  if (nextRound) roundSelect.value = nextRound.roundNum;
 
   const FINALS_STAGE_LABELS = { elimination: 'Elimination', semis: 'Semi Finals', grandFinal: 'Grand Final' };
   const wetFinalsStageSelect = document.getElementById('wet-finals-stage');
@@ -156,6 +171,24 @@
   const finalsSlotSelect = document.getElementById('finals-slot');
   const submitBtn = document.getElementById('submit-btn');
   let mode = 'weekly';
+
+  // Same played-checkmark + smart-default idea as the weekly Round select
+  // above, just keyed by bracket slot instead of round number -- a slot
+  // counts as played once FINALS_RESULTS has an entry for it, no per-court
+  // aggregation needed since each slot is already a single match.
+  const FINALS_SLOT_LABELS = {
+    game1: 'Elimination — Game 1', game2: 'Elimination — Game 2', game3: 'Elimination — Game 3',
+    semi1: 'Semi Final 1', semi2: 'Semi Final 2', final: 'Grand Final',
+  };
+  Object.keys(FINALS_SLOT_LABELS).forEach(slot => {
+    const opt = document.createElement('option');
+    opt.value = slot;
+    const played = FINALS_RESULTS.hasOwnProperty(slot);
+    opt.textContent = played ? `✓ ${FINALS_SLOT_LABELS[slot]} (played)` : FINALS_SLOT_LABELS[slot];
+    finalsSlotSelect.appendChild(opt);
+  });
+  const nextFinalsSlot = Object.keys(FINALS_SLOT_LABELS).find(slot => !FINALS_RESULTS.hasOwnProperty(slot));
+  if (nextFinalsSlot) finalsSlotSelect.value = nextFinalsSlot;
 
   const wetModeWeeklyBtn = document.getElementById('wet-mode-weekly');
   const wetModeFinalsBtn = document.getElementById('wet-mode-finals');
@@ -318,6 +351,26 @@
   const form = document.getElementById('upload-form');
   const status = document.getElementById('status');
 
+  // The inline status text below the button is easy to miss on a phone
+  // (often needs a scroll, easy to mistake for a static label) -- this
+  // modal is the hard-to-miss confirmation that something actually
+  // happened, with the same message duplicated into the status text too
+  // so it's still there as a persistent record after the modal's closed.
+  const successModal = document.getElementById('success-modal');
+  const successModalTitle = document.getElementById('success-modal-title');
+  const successModalBody = document.getElementById('success-modal-body');
+  const successModalClose = document.getElementById('success-modal-close');
+  function showSuccessModal(title, bodyHTML) {
+    successModalTitle.textContent = title;
+    successModalBody.innerHTML = bodyHTML;
+    successModal.style.display = 'flex';
+  }
+  function hideSuccessModal() {
+    successModal.style.display = 'none';
+  }
+  successModalClose.addEventListener('click', hideSuccessModal);
+  successModal.addEventListener('click', (e) => { if (e.target === successModal) hideSuccessModal(); });
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -365,13 +418,54 @@
         status.textContent = data.error || 'Something went wrong submitting this.';
       } else {
         status.className = 'status-msg success';
+        let statusText, modalHTML;
         if (mode === 'wet' && wetSubMode === 'weekly') {
-          status.textContent = `Reported Round ${payload.roundNum} as WET. Awaiting approval before it's marked postponed.`;
+          statusText = `Reported Round ${payload.roundNum} as WET. Awaiting approval before it's marked postponed.`;
+          modalHTML = `<p>${statusText}</p>`;
         } else if (mode === 'wet') {
-          status.textContent = `Reported ${FINALS_STAGE_LABELS[payload.finalsStage]} as WET. Awaiting approval before it's pushed back a week.`;
+          statusText = `Reported ${FINALS_STAGE_LABELS[payload.finalsStage]} as WET. Awaiting approval before it's pushed back a week.`;
+          modalHTML = `<p>${statusText}</p>`;
         } else {
-          status.textContent = `Submitted — read as ${data.extracted.setsA}–${data.extracted.setsB} sets, ${data.extracted.gamesA}–${data.extracted.gamesB} games. Awaiting approval before it goes live.`;
+          // Same team lookup the matchup preview already used to show this
+          // pairing before they hit submit -- repeating it here so the
+          // confirmation says whose score belongs to whom, not just bare
+          // numbers where team A/B order has to be inferred or remembered.
+          let teamA, teamB;
+          if (mode === 'weekly') {
+            const slot = slotForCourt(payload.roundNum, payload.courtNum);
+            [teamA, teamB] = ALL_ROUNDS[payload.roundNum - 1][slot];
+          } else {
+            const slotInfo = computeFinalsState()[payload.finalsSlot];
+            teamA = slotInfo && slotInfo.teamA;
+            teamB = slotInfo && slotInfo.teamB;
+          }
+          const e = data.extracted;
+          const bp = matchPoints(e);
+          const labelA = teamA ? teamLabel(teamA) : 'Team A';
+          const labelB = teamB ? teamLabel(teamB) : 'Team B';
+          statusText = `${labelA}: ${e.gamesA} games, ${e.setsA} sets, ${bp.totalA} points — ${labelB}: ${e.gamesB} games, ${e.setsB} sets, ${bp.totalB} points. Awaiting approval before it goes live.`;
+          // Laid out as rows/columns matching the paper score sheet's own
+          // Games / Sets / Bonus / Total structure (see the weekly sheet
+          // reviewed for the data-entry workflow) rather than a plain
+          // sentence, so it reads the same way as what's on the sheet
+          // being checked against.
+          modalHTML = `
+            <table class="score-sheet">
+              <thead>
+                <tr><th></th><th>${labelA}</th><th>${labelB}</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Games</td><td>${e.gamesA}</td><td>${e.gamesB}</td></tr>
+                <tr><td>Sets</td><td>${e.setsA}</td><td>${e.setsB}</td></tr>
+                <tr><td>Games bonus</td><td>${bp.gamesBonusA}</td><td>${bp.gamesBonusB}</td></tr>
+                <tr><td>Sets bonus</td><td>${bp.setsBonusA}</td><td>${bp.setsBonusB}</td></tr>
+                <tr class="total"><td>Total points</td><td>${bp.totalA}</td><td>${bp.totalB}</td></tr>
+              </tbody>
+            </table>
+            <p class="modal-note">Awaiting approval before it goes live.</p>`;
         }
+        status.textContent = statusText;
+        showSuccessModal(mode === 'wet' ? 'Reported!' : 'Thanks — Submitted!', modalHTML);
         form.reset();
         setMode(mode);
       }
