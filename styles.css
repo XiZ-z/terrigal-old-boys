@@ -471,8 +471,12 @@ footer{
   display:block; font-size:12px; font-weight:600; text-transform:uppercase;
   letter-spacing:0.06em; color:var(--ink-soft); margin-bottom:6px;
 }
-.field-row select, .field-row input[type="number"], .field-row input[type="file"]{
-  font-family:'IBM Plex Sans', sans-serif; font-size:14px; padding:9px 11px;
+.field-row select, .field-row input[type="number"], .field-row input[type="file"], .field-row input[type="password"]{
+  /* font-size must stay >=16px -- anything smaller makes iOS Safari
+     auto-zoom in when the field is focused, and the zoom then just
+     sticks around after the page changes underneath it (e.g. logging
+     into the review page). */
+  font-family:'IBM Plex Sans', sans-serif; font-size:16px; padding:9px 11px;
   border:1px solid var(--paper-line); border-radius:8px; background:var(--white);
   color:var(--ink); width:100%;
 }
