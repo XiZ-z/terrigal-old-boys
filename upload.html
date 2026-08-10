@@ -43,7 +43,8 @@
         </div>
         <div class="field-row">
           <label for="court-num">Court</label>
-          <select id="court-num" name="courtNum">
+          <select id="court-num" name="courtNum" required>
+            <option value="" selected disabled>Select court…</option>
             <option value="1">Court 1</option>
             <option value="2">Court 2</option>
             <option value="3">Court 3</option>
@@ -145,9 +146,14 @@
   }
   // Default to whichever round still needs results in (same "next round"
   // logic the rest of the site uses), so whoever's uploading each week
-  // doesn't have to manually change it off Round 1 every time.
+  // doesn't have to manually change it off Round 1 every time. Applies to
+  // the wet-report round picker too -- a wet report is almost always for
+  // whichever round is coming up next, not Round 1.
   const nextRound = getNextRound();
-  if (nextRound) roundSelect.value = nextRound.roundNum;
+  if (nextRound) {
+    roundSelect.value = nextRound.roundNum;
+    wetRoundSelect.value = nextRound.roundNum;
+  }
 
   const FINALS_STAGE_LABELS = { elimination: 'Elimination', semis: 'Semi Finals', grandFinal: 'Grand Final' };
   const wetFinalsStageSelect = document.getElementById('wet-finals-stage');
@@ -266,6 +272,10 @@
     }
     matchupPreview.style.display = 'flex';
     if (mode === 'weekly') {
+      if (!courtSelect.value) {
+        matchupPreview.innerHTML = `<span class="matchup-sub">Select a court to see the matchup.</span>`;
+        return;
+      }
       const roundNum = Number(roundSelect.value);
       const courtNum = Number(courtSelect.value);
       const slot = slotForCourt(roundNum, courtNum);
