@@ -3,10 +3,7 @@
 // review; nothing here touches data.js directly.
 const { randomUUID } = require('crypto');
 const { slotForCourt } = require('../../data.js');
-const { sheetsStore, json, readScoreSheet, checkRateLimit, resolveDate, dateSlug } = require('./lib/shared');
-
-const FINALS_SLOTS = ['game1', 'game2', 'game3', 'semi1', 'semi2', 'final'];
-const FINALS_STAGES = ['elimination', 'semis', 'grandFinal'];
+const { sheetsStore, json, readScoreSheet, checkRateLimit, resolveDate, dateSlug, FINALS_SLOTS, FINALS_STAGES } = require('./lib/shared');
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });

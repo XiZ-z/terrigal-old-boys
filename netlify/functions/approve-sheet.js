@@ -3,7 +3,7 @@
 // Contents API, then archives the pending record (kept, not deleted, as an
 // audit trail).
 const { RESERVE_DATES } = require('../../data.js');
-const { sheetsStore, isAuthed, json, getDataJs, putDataJs, upsertEntry, upsertWetRound, upsertFinalsWetWeek, resolveDate, dateSlug } = require('./lib/shared');
+const { sheetsStore, isAuthed, json, getDataJs, putDataJs, upsertEntry, upsertWetRound, upsertFinalsWetWeek, resolveDate, dateSlug, slotForCourt, FINALS_SLOTS, FINALS_STAGES } = require('./lib/shared');
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
@@ -24,23 +24,35 @@ exports.handler = async (event) => {
     if (!record) return json(404, { error: 'Pending submission not found' });
 
     if (record.wet && record.mode === 'finals') {
-      const { content, sha } = await getDataJs();
-      const newContent = upsertFinalsWetWeek(content, record.finalsStage);
-      await putDataJs(newContent, sha, `Push ${record.finalsStage} back a week for wet weather (approved via review)`);
+      // finalsStage can be corrected at review time (e.g. wrong stage picked
+      // when reporting a wet week) -- defaults to whatever was submitted.
+      const finalsStage = payload.finalsStage || record.finalsStage;
+      if (!FINALS_STAGES.includes(finalsStage)) return json(400, { error: 'Invalid finals stage' });
 
-      await store.setJSON(`approved/${id}.json`, { ...record, approvedAt: new Date().toISOString() });
+      const { content, sha } = await getDataJs();
+      const newContent = upsertFinalsWetWeek(content, finalsStage);
+      await putDataJs(newContent, sha, `Push ${finalsStage} back a week for wet weather (approved via review)`);
+
+      await store.setJSON(`approved/${id}.json`, { ...record, finalsStage, approvedAt: new Date().toISOString() });
       await store.delete(`pending/${id}.json`);
-      return json(200, { ok: true, key: `wet-finals-${record.finalsStage}` });
+      return json(200, { ok: true, key: `wet-finals-${finalsStage}` });
     }
 
     if (record.wet) {
-      const { content, sha } = await getDataJs();
-      const newContent = upsertWetRound(content, record.roundNum, RESERVE_DATES);
-      await putDataJs(newContent, sha, `Mark Round ${record.roundNum} as WET (approved via review)`);
+      // roundNum can be corrected at review time (e.g. wrong round picked
+      // when reporting a wet week) -- defaults to whatever was submitted.
+      const roundNum = payload.roundNum !== undefined ? Number(payload.roundNum) : record.roundNum;
+      if (!Number.isInteger(roundNum) || roundNum < 1 || roundNum > 14) {
+        return json(400, { error: 'Invalid round number' });
+      }
 
-      await store.setJSON(`approved/${id}.json`, { ...record, approvedAt: new Date().toISOString() });
+      const { content, sha } = await getDataJs();
+      const newContent = upsertWetRound(content, roundNum, RESERVE_DATES);
+      await putDataJs(newContent, sha, `Mark Round ${roundNum} as WET (approved via review)`);
+
+      await store.setJSON(`approved/${id}.json`, { ...record, roundNum, approvedAt: new Date().toISOString() });
       await store.delete(`pending/${id}.json`);
-      return json(200, { ok: true, key: `wet-round-${record.roundNum}` });
+      return json(200, { ok: true, key: `wet-round-${roundNum}` });
     }
 
     const setsA = Number(payload.setsA);
@@ -57,6 +69,33 @@ exports.handler = async (event) => {
       return json(400, { error: 'Sets must be 0-6 and games 0-48 -- check for a typo before approving.' });
     }
 
+    // Round/court (weekly) or finals slot (finals) can be corrected at
+    // review time -- e.g. the wrong round or court was picked at upload.
+    // Recompute the data.js key from the correction rather than trusting
+    // whatever the pending record was originally staged under.
+    let { roundNum, courtNum, finalsSlot, blockConst, keyLiteral, key } = record;
+    if (record.mode === 'weekly') {
+      if (payload.roundNum !== undefined) roundNum = Number(payload.roundNum);
+      if (payload.courtNum !== undefined) courtNum = Number(payload.courtNum);
+      if (!Number.isInteger(roundNum) || roundNum < 1 || roundNum > 14) {
+        return json(400, { error: 'Invalid round number' });
+      }
+      if (!Number.isInteger(courtNum) || courtNum < 1 || courtNum > 4) {
+        return json(400, { error: 'Invalid court number' });
+      }
+      const slot = slotForCourt(roundNum, courtNum);
+      key = `${roundNum}-${slot}`;
+      blockConst = 'RESULTS';
+      keyLiteral = `"${key}"`;
+    } else if (record.mode === 'finals' && payload.finalsSlot !== undefined) {
+      finalsSlot = payload.finalsSlot;
+      if (!FINALS_SLOTS.includes(finalsSlot)) return json(400, { error: 'Invalid finals slot' });
+      key = finalsSlot;
+      blockConst = 'FINALS_RESULTS';
+      keyLiteral = finalsSlot;
+    }
+    const correctedRecord = { ...record, roundNum, courtNum, finalsSlot, blockConst, keyLiteral, key };
+
     let valueLiteral = `{ setsA: ${setsA}, setsB: ${setsB}, gamesA: ${gamesA}, gamesB: ${gamesB} }`;
     if (record.mode === 'finals') {
       const winner = payload.winner === 'B' ? 'B' : 'A';
@@ -64,24 +103,24 @@ exports.handler = async (event) => {
     }
 
     const { content, sha } = await getDataJs();
-    const newContent = upsertEntry(content, record.blockConst, record.keyLiteral, valueLiteral);
+    const newContent = upsertEntry(content, blockConst, keyLiteral, valueLiteral);
     await putDataJs(
       newContent,
       sha,
-      `Add result ${record.key} (approved via review)`
+      `Add result ${key} (approved via review)`
     );
 
     // Nest approved photos under date/court (or date/finals-slot) so
     // they're browsable at a glance in the Blobs dashboard, not just a flat
     // pile of ids -- pending stays flat since it's only ever looked at
     // once, right before approval.
-    const folder = record.mode === 'weekly' ? `court${record.courtNum}` : record.finalsSlot;
-    const approvedId = `${dateSlug(resolveDate(record))}/${folder}/${id}`;
+    const folder = correctedRecord.mode === 'weekly' ? `court${courtNum}` : finalsSlot;
+    const approvedId = `${dateSlug(resolveDate(correctedRecord))}/${folder}/${id}`;
 
     const { data: photoBytes, metadata: photoMetadata } = await store.getWithMetadata(`pending/${id}.jpg`, { type: 'arrayBuffer' });
     await store.set(`approved/${approvedId}.jpg`, Buffer.from(photoBytes), { metadata: photoMetadata });
     await store.setJSON(`approved/${approvedId}.json`, {
-      ...record,
+      ...correctedRecord,
       id: approvedId,
       approved: { setsA, setsB, gamesA, gamesB, winner: payload.winner },
       approvedAt: new Date().toISOString(),
@@ -89,7 +128,7 @@ exports.handler = async (event) => {
     await store.delete(`pending/${id}.json`);
     await store.delete(`pending/${id}.jpg`);
 
-    return json(200, { ok: true, key: record.key });
+    return json(200, { ok: true, key });
   } catch (err) {
     // If this happens after the GitHub commit already landed, the result
     // IS live -- retrying is safe (upsertEntry/upsertWetRound/

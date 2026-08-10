@@ -1,6 +1,6 @@
 // Shared helpers for the score-sheet upload/review functions.
 const { getStore } = require('@netlify/blobs');
-const { ALL_ROUNDS, computeFinalsState, DATES, WET_ROUNDS, getFinalsDates } = require('../../../data.js');
+const { ALL_ROUNDS, computeFinalsState, DATES, WET_ROUNDS, getFinalsDates, slotForCourt } = require('../../../data.js');
 
 const STORE_NAME = 'sheets';
 
@@ -9,6 +9,12 @@ const FINALS_SLOT_STAGE = {
   semi1: 'semis', semi2: 'semis',
   final: 'grandFinal',
 };
+
+// Shared validation whitelists -- used by both submit-sheet (initial upload)
+// and approve-sheet (round/court/slot correction at review time) so the two
+// never drift out of sync with each other.
+const FINALS_SLOTS = Object.keys(FINALS_SLOT_STAGE);
+const FINALS_STAGES = ['elimination', 'semis', 'grandFinal'];
 
 // The actual calendar date a weekly round or finals slot is played on --
 // accounts for wet-weather reschedules on both the round-robin (WET_ROUNDS)
@@ -267,4 +273,5 @@ module.exports = {
   sheetsStore, isAuthed, json, resolveTeams,
   getDataJs, putDataJs, upsertEntry, upsertWetRound, upsertFinalsWetWeek,
   readScoreSheet, checkRateLimit, resolveDate, dateSlug,
+  slotForCourt, FINALS_SLOTS, FINALS_STAGES,
 };
