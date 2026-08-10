@@ -84,6 +84,7 @@
   const archiveStatusApprovedBtn = document.getElementById('archive-status-approved');
   const archiveStatusRejectedBtn = document.getElementById('archive-status-rejected');
   let archiveStatus = 'approved';
+  const FINALS_STAGE_LABELS = { elimination: 'Elimination', semis: 'Semi Finals', grandFinal: 'Grand Final' };
   const archiveCache = {
     approved: { loaded: false, items: [] },
     rejected: { loaded: false, items: [] },
@@ -199,8 +200,6 @@
       return;
     }
 
-    const FINALS_STAGE_LABELS = { elimination: 'Elimination', semis: 'Semi Finals', grandFinal: 'Grand Final' };
-
     // Flags multiple pending submissions for the same round/court or finals
     // slot/stage -- doesn't block anything (a genuine double-upload of the
     // same match is harmless, and a wrong-court mistake needs a human to
@@ -220,12 +219,15 @@
 
     reviewList.innerHTML = items.map(item => {
       if (item.wet && item.mode === 'finals') {
-        const stageLabel = FINALS_STAGE_LABELS[item.finalsStage] || item.finalsStage;
+        const stageOptions = FINALS_STAGES_LIST.map(s =>
+          `<option value="${s}" ${s === item.finalsStage ? 'selected' : ''}>${FINALS_STAGE_LABELS[s]}</option>`).join('');
         return `
           <div class="review-item" data-id="${item.id}" style="grid-template-columns:1fr;">
             <div>
-              <div class="review-meta"><span class="pill wet">WET</span> ${duplicatePill(item)}&nbsp; ${stageLabel} reported postponed &middot; submitted ${new Date(item.createdAt).toLocaleString()}</div>
-              <p class="section-sub" style="margin:8px 0;">Approving will push ${stageLabel} (and every finals stage after it) back one week to the following Wednesday.</p>
+              <div class="review-meta"><span class="pill wet">WET</span> ${duplicatePill(item)}&nbsp;
+                <select id="stage-${item.id}" onchange="updateWetFinalsNote('${item.id}')">${stageOptions}</select>
+                reported postponed &middot; submitted ${new Date(item.createdAt).toLocaleString()}</div>
+              <p class="section-sub" id="wet-note-${item.id}" style="margin:8px 0;">${wetFinalsNoteText(item.finalsStage)}</p>
               <div class="review-actions">
                 <button class="btn btn-primary" onclick="approve('${item.id}')">Approve</button>
                 <button class="btn btn-reject" onclick="reject('${item.id}')">Reject</button>
@@ -235,11 +237,15 @@
           </div>`;
       }
       if (item.wet) {
+        const roundOptions = Array.from({ length: 14 }, (_, i) => i + 1)
+          .map(n => `<option value="${n}" ${n === item.roundNum ? 'selected' : ''}>${n}</option>`).join('');
         return `
           <div class="review-item" data-id="${item.id}" style="grid-template-columns:1fr;">
             <div>
-              <div class="review-meta"><span class="pill wet">WET</span> ${duplicatePill(item)}&nbsp; Round ${item.roundNum} reported postponed &middot; submitted ${new Date(item.createdAt).toLocaleString()}</div>
-              <p class="section-sub" style="margin:8px 0;">Approving will mark Round ${item.roundNum} as postponed and auto-assign the next available replay date (11 Nov / 18 Nov), or record it as having no replay if both are already used.</p>
+              <div class="review-meta"><span class="pill wet">WET</span> ${duplicatePill(item)}&nbsp;
+                Round <select id="round-${item.id}" onchange="updateWetRoundNote('${item.id}')">${roundOptions}</select>
+                reported postponed &middot; submitted ${new Date(item.createdAt).toLocaleString()}</div>
+              <p class="section-sub" id="wet-note-${item.id}" style="margin:8px 0;">${wetRoundNoteText(item.roundNum)}</p>
               <div class="review-actions">
                 <button class="btn btn-primary" onclick="approve('${item.id}')">Approve</button>
                 <button class="btn btn-reject" onclick="reject('${item.id}')">Reject</button>
@@ -251,10 +257,23 @@
 
       const teamA = item.teamA ? teamLabel(item.teamA) : 'Team A';
       const teamB = item.teamB ? teamLabel(item.teamB) : 'Team B';
-      const matchup = `${teamA} v ${teamB}`;
-      const label = item.mode === 'finals'
-        ? `Finals — ${item.finalsSlot} — ${matchup}`
-        : `Round ${item.roundNum}, Court ${item.courtNum} — ${matchup}`;
+      const matchupPrefix = item.mode === 'finals' ? `Finals — ${item.finalsSlot}` : `Round ${item.roundNum}, Court ${item.courtNum}`;
+      const locationField = item.mode === 'finals' ? `
+        <div class="field-row"><label>Finals slot</label>
+          <select id="slot-${item.id}" onchange="updateFinalsMatchup('${item.id}')">
+            ${FINALS_SLOTS_LIST.map(s => `<option value="${s}" ${s === item.finalsSlot ? 'selected' : ''}>${s}</option>`).join('')}
+          </select>
+        </div>` : `
+        <div class="field-row"><label>Round</label>
+          <select id="round-${item.id}" onchange="updateWeeklyMatchup('${item.id}')">
+            ${Array.from({ length: 14 }, (_, i) => i + 1).map(n => `<option value="${n}" ${n === item.roundNum ? 'selected' : ''}>${n}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field-row"><label>Court</label>
+          <select id="court-${item.id}" onchange="updateWeeklyMatchup('${item.id}')">
+            ${[1, 2, 3, 4].map(n => `<option value="${n}" ${n === item.courtNum ? 'selected' : ''}>Court ${n}</option>`).join('')}
+          </select>
+        </div>`;
       const winnerField = item.mode === 'finals' ? `
         <div class="field-row">
           <label>Winner</label>
@@ -267,12 +286,13 @@
         <div class="review-item" data-id="${item.id}">
           <img data-photo-id="${item.id}" data-photo-store="pending" alt="Score sheet photo" style="cursor:zoom-in; background:var(--paper-line); min-height:120px;" onclick="openLightbox(this.src)">
           <div>
-            <div class="review-meta">${label} ${duplicatePill(item)} &middot; submitted ${new Date(item.createdAt).toLocaleString()}</div>
+            <div class="review-meta"><span id="matchup-${item.id}">${matchupPrefix} — ${teamA} v ${teamB}</span> ${duplicatePill(item)} &middot; submitted ${new Date(item.createdAt).toLocaleString()}</div>
             <div class="field-grid">
-              <div class="field-row"><label>Sets — ${teamA}</label><input type="number" step="0.5" id="setsA-${item.id}" value="${item.extracted.setsA}"></div>
-              <div class="field-row"><label>Sets — ${teamB}</label><input type="number" step="0.5" id="setsB-${item.id}" value="${item.extracted.setsB}"></div>
-              <div class="field-row"><label>Games — ${teamA}</label><input type="number" id="gamesA-${item.id}" value="${item.extracted.gamesA}"></div>
-              <div class="field-row"><label>Games — ${teamB}</label><input type="number" id="gamesB-${item.id}" value="${item.extracted.gamesB}"></div>
+              ${locationField}
+              <div class="field-row"><label>Sets — <span class="team-label" data-item="${item.id}" data-team="A">${teamA}</span></label><input type="number" step="0.5" id="setsA-${item.id}" value="${item.extracted.setsA}"></div>
+              <div class="field-row"><label>Sets — <span class="team-label" data-item="${item.id}" data-team="B">${teamB}</span></label><input type="number" step="0.5" id="setsB-${item.id}" value="${item.extracted.setsB}"></div>
+              <div class="field-row"><label>Games — <span class="team-label" data-item="${item.id}" data-team="A">${teamA}</span></label><input type="number" id="gamesA-${item.id}" value="${item.extracted.gamesA}"></div>
+              <div class="field-row"><label>Games — <span class="team-label" data-item="${item.id}" data-team="B">${teamB}</span></label><input type="number" id="gamesB-${item.id}" value="${item.extracted.gamesB}"></div>
             </div>
             ${winnerField}
             <div class="review-actions">
@@ -284,6 +304,51 @@
         </div>`;
     }).join('');
     loadPhotosInto(reviewList);
+  }
+
+  // ---- Live-updating labels when round/court/slot/stage is corrected on a pending item ----
+  const FINALS_SLOTS_LIST = ['game1', 'game2', 'game3', 'semi1', 'semi2', 'final'];
+  const FINALS_STAGES_LIST = ['elimination', 'semis', 'grandFinal'];
+
+  function wetRoundNoteText(roundNum) {
+    return `Approving will mark Round ${roundNum} as postponed and auto-assign the next available replay date (11 Nov / 18 Nov), or record it as having no replay if both are already used.`;
+  }
+  function updateWetRoundNote(id) {
+    document.getElementById(`wet-note-${id}`).textContent = wetRoundNoteText(document.getElementById(`round-${id}`).value);
+  }
+
+  function wetFinalsNoteText(stage) {
+    const label = FINALS_STAGE_LABELS[stage] || stage;
+    return `Approving will push ${label} (and every finals stage after it) back one week to the following Wednesday.`;
+  }
+  function updateWetFinalsNote(id) {
+    document.getElementById(`wet-note-${id}`).textContent = wetFinalsNoteText(document.getElementById(`stage-${id}`).value);
+  }
+
+  function applyMatchupUpdate(id, prefix, labelA, labelB) {
+    const matchupEl = document.getElementById(`matchup-${id}`);
+    if (matchupEl) matchupEl.textContent = `${prefix} — ${labelA} v ${labelB}`;
+    document.querySelectorAll(`.team-label[data-item="${id}"][data-team="A"]`).forEach(el => el.textContent = labelA);
+    document.querySelectorAll(`.team-label[data-item="${id}"][data-team="B"]`).forEach(el => el.textContent = labelB);
+    const winnerSel = document.getElementById(`winner-${id}`);
+    if (winnerSel) {
+      winnerSel.options[0].textContent = labelA;
+      winnerSel.options[1].textContent = labelB;
+    }
+  }
+  function updateWeeklyMatchup(id) {
+    const roundNum = Number(document.getElementById(`round-${id}`).value);
+    const courtNum = Number(document.getElementById(`court-${id}`).value);
+    const slot = slotForCourt(roundNum, courtNum);
+    const [teamA, teamB] = ALL_ROUNDS[roundNum - 1][slot];
+    applyMatchupUpdate(id, `Round ${roundNum}, Court ${courtNum}`, teamLabel(teamA), teamLabel(teamB));
+  }
+  function updateFinalsMatchup(id) {
+    const slot = document.getElementById(`slot-${id}`).value;
+    const info = computeFinalsState()[slot];
+    const labelA = info && info.teamA ? teamLabel(info.teamA) : 'Team A';
+    const labelB = info && info.teamB ? teamLabel(info.teamB) : 'Team B';
+    applyMatchupUpdate(id, `Finals — ${slot}`, labelA, labelB);
   }
 
   // Each photo is its own request (get-photo.js), not inlined into the list
@@ -305,8 +370,6 @@
     container.querySelectorAll('img[data-photo-id]').forEach(loadPhotoInto);
   }
 
-  const FINALS_STAGE_LABELS_ARCHIVE = { elimination: 'Elimination', semis: 'Semi Finals', grandFinal: 'Grand Final' };
-
   function renderArchiveList(items) {
     const isRejected = archiveStatus === 'rejected';
     const verb = isRejected ? 'rejected' : 'approved';
@@ -324,7 +387,7 @@
       const reasonNote = isRejected && item.reason ? ` &middot; Reason: ${item.reason}` : '';
 
       if (item.wet && item.mode === 'finals') {
-        const stageLabel = FINALS_STAGE_LABELS_ARCHIVE[item.finalsStage] || item.finalsStage;
+        const stageLabel = FINALS_STAGE_LABELS[item.finalsStage] || item.finalsStage;
         return `
           <div class="review-item" style="grid-template-columns:1fr;">
             <div class="review-meta"><span class="pill wet">WET</span>&nbsp; ${stageLabel} marked postponed &middot; ${verb} ${when}${reasonNote}</div>
@@ -386,6 +449,15 @@
     } : { id }; // wet-round report -- nothing to correct, just approve/reject
     const winnerEl = document.getElementById(`winner-${id}`);
     if (winnerEl) body.winner = winnerEl.value;
+    // Round/court/slot/stage corrections made on the review page, if any.
+    const roundEl = document.getElementById(`round-${id}`);
+    if (roundEl) body.roundNum = Number(roundEl.value);
+    const courtEl = document.getElementById(`court-${id}`);
+    if (courtEl) body.courtNum = Number(courtEl.value);
+    const slotEl = document.getElementById(`slot-${id}`);
+    if (slotEl) body.finalsSlot = slotEl.value;
+    const stageEl = document.getElementById(`stage-${id}`);
+    if (stageEl) body.finalsStage = stageEl.value;
 
     try {
       const res = await fetch('/.netlify/functions/approve-sheet', {
