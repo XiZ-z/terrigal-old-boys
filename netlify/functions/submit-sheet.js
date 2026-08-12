@@ -2,7 +2,7 @@
 // Reads the totals off it with Claude vision and stages it for Ash to
 // review; nothing here touches data.js directly.
 const { randomUUID } = require('crypto');
-const { slotForCourt } = require('../../data.js');
+const { slotForCourt, ALL_ROUNDS, teamLabel, computeFinalsState } = require('../../data.js');
 const { sheetsStore, json, readScoreSheet, checkRateLimit, resolveDate, dateSlug, FINALS_SLOTS, FINALS_STAGES } = require('./lib/shared');
 
 exports.handler = async (event) => {
@@ -49,7 +49,7 @@ exports.handler = async (event) => {
 
   if (!photoBase64 || !mediaType) return json(400, { error: 'Missing photo' });
 
-  let blockConst, keyLiteral, key, roundNum = null, courtNum = null, finalsSlot = null;
+  let blockConst, keyLiteral, key, roundNum = null, courtNum = null, finalsSlot = null, weeklySlot = null;
 
   if (mode === 'weekly') {
     roundNum = Number(payload.roundNum);
@@ -60,8 +60,8 @@ exports.handler = async (event) => {
     if (!Number.isInteger(courtNum) || courtNum < 1 || courtNum > 4) {
       return json(400, { error: 'Invalid court number' });
     }
-    const slot = slotForCourt(roundNum, courtNum);
-    key = `${roundNum}-${slot}`;
+    weeklySlot = slotForCourt(roundNum, courtNum);
+    key = `${roundNum}-${weeklySlot}`;
     blockConst = 'RESULTS';
     keyLiteral = `"${key}"`;
   } else if (mode === 'finals') {
@@ -74,9 +74,28 @@ exports.handler = async (event) => {
     return json(400, { error: 'mode must be "weekly" or "finals"' });
   }
 
+  // Resolve which real team is "A" and which is "B" per the app's own fixture
+  // (weekly) or bracket state (finals), so the vision read can be told which
+  // two teams to expect and match the sheet's own handwritten "TEAM ___ V
+  // TEAM ___" boxes against them -- rather than assuming whichever side is
+  // physically written first/left on the sheet is always "A". Finals slots
+  // can be unresolved this early (e.g. semis before elimination's played),
+  // in which case there's nothing to match against and the read falls back
+  // to whatever order the sheet itself is in.
+  let teamA = null, teamB = null;
+  if (mode === 'weekly') {
+    [teamA, teamB] = ALL_ROUNDS[roundNum - 1][weeklySlot];
+  } else {
+    const slotInfo = computeFinalsState()[finalsSlot];
+    if (slotInfo) ({ teamA, teamB } = slotInfo);
+  }
+  const teamLabels = teamA != null && teamB != null
+    ? { teamALabel: teamLabel(teamA), teamBLabel: teamLabel(teamB) }
+    : null;
+
   let extracted;
   try {
-    extracted = await readScoreSheet(photoBase64, mediaType, mode === 'finals');
+    extracted = await readScoreSheet(photoBase64, mediaType, mode === 'finals', teamLabels);
   } catch (err) {
     return json(502, { error: `Could not read the photo: ${err.message}` });
   }
