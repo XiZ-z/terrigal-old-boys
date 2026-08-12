@@ -116,7 +116,7 @@
   <div class="modal-card modal-card--warning">
     <div class="modal-eyebrow">Warning</div>
     <div class="modal-icon modal-icon-warning">⚠️</div>
-    <h3>Numbers Don't Add Up</h3>
+    <h3 id="mismatch-modal-title">Numbers Don't Add Up</h3>
     <div id="mismatch-modal-body"></div>
     <div class="review-actions" style="justify-content:center; margin-top:14px;">
       <button type="button" class="btn btn-reject" id="mismatch-retake-btn">Retake Photo</button>
@@ -477,16 +477,31 @@
     const parts = [];
     if (data.actualGames !== data.expectedGames) parts.push(`games total <strong>${data.actualGames}</strong> (should be <strong>${data.expectedGames}</strong>)`);
     if (data.actualSets !== data.expectedSets) parts.push(`sets total <strong>${data.actualSets}</strong> (should be <strong>${data.expectedSets}</strong>)`);
+    if (data.courtMismatch) parts.push(`the sheet's own Court box says <strong>Court ${data.courtOnSheet}</strong>, not Court ${data.expectedCourt}`);
+    if (data.dateMismatch) parts.push(`the sheet's Date box doesn't look like <strong>${data.expectedDate}</strong>`);
     return parts.join(' and ');
+  }
+
+  // Names whichever thing(s) are actually wrong, rather than always saying
+  // "Numbers Don't Add Up" -- a court/date mismatch with perfectly correct
+  // games and sets would otherwise read as a contradiction ("why does it
+  // say that, my numbers ARE right").
+  function mismatchTitle(data) {
+    const titles = [];
+    if (data.courtMismatch) titles.push('Wrong Court');
+    if (data.dateMismatch) titles.push('Incorrect Round');
+    if (data.actualGames !== data.expectedGames || data.actualSets !== data.expectedSets) titles.push("Numbers Don't Add Up");
+    return titles.join(' & ');
   }
 
   function showMismatchModal(payload, data) {
     pendingMismatch = { payload, extracted: data.extracted };
     const { labelA, labelB } = resultTeamLabels(payload);
+    document.getElementById('mismatch-modal-title').textContent = mismatchTitle(data);
     mismatchModalBody.innerHTML = `
       <p>${labelA} v ${labelB} — ${mismatchDescription(data)}.</p>
       ${scoreTableHTML(labelA, labelB, data.extracted, false)}
-      <p class="modal-note">Double-check the games and sets add up correctly on the paper sheet, then retake the photo. Already correct? Submit anyway for review.</p>`;
+      <p class="modal-note">Double-check the paper sheet -- the right court/round, and the games and sets adding up correctly -- then retake the photo. Already correct? Submit anyway for review.</p>`;
     mismatchModal.style.display = 'flex';
   }
   function hideMismatchModal() { mismatchModal.style.display = 'none'; }
@@ -498,7 +513,7 @@
     photoInput.value = '';
     photoFilename.textContent = '';
     status.className = 'status-msg error';
-    status.textContent = 'Double-check the totals on the sheet, then take a clearer photo and submit again.';
+    status.textContent = 'Double-check the sheet -- court/round and totals -- then take a clearer photo and submit again.';
   });
 
   mismatchSubmitAnywayBtn.addEventListener('click', async () => {

@@ -93,16 +93,21 @@ exports.handler = async (event) => {
     ? { teamALabel: teamLabel(teamA), teamBLabel: teamLabel(teamB) }
     : null;
 
-  // A "submit anyway" resubmission (see the games-mismatch check below)
-  // carries the numbers the uploader already saw and confirmed, rather than
-  // reading the photo again -- reuses the already-paid-for vision read
-  // instead of re-running (and re-billing) it on the same image.
+  // Needed before the read itself now, not just for filing afterward -- the
+  // sheet's own "COURT"/"DATE" boxes get cross-checked against these.
+  const dateStr = resolveDate({ mode, roundNum, finalsSlot });
+  const expectedContext = { expectedDate: dateStr, expectedCourt: mode === 'weekly' ? courtNum : null };
+
+  // A "submit anyway" resubmission (see the mismatch check below) carries
+  // the numbers the uploader already saw and confirmed, rather than reading
+  // the photo again -- reuses the already-paid-for vision read instead of
+  // re-running (and re-billing) it on the same image.
   let extracted;
   if (payload.confirmedExtracted) {
     extracted = payload.confirmedExtracted;
   } else {
     try {
-      extracted = await readScoreSheet(photoBase64, mediaType, mode === 'finals', teamLabels);
+      extracted = await readScoreSheet(photoBase64, mediaType, mode === 'finals', teamLabels, expectedContext);
     } catch (err) {
       return json(502, { error: `Could not read the photo: ${err.message}` });
     }
@@ -133,14 +138,28 @@ exports.handler = async (event) => {
   const actualSets = extracted.setsA + extracted.setsB;
   const actualGames = extracted.gamesA + extracted.gamesB;
   const sheetMismatch = actualSets !== expectedSets || actualGames !== expectedGames;
-  if (sheetMismatch && !payload.confirmedExtracted) {
+
+  // Catches a different mistake to a misread: the *right* photo read
+  // correctly but filed under the *wrong* court/round -- e.g. picking Court
+  // 3 in the dropdown while actually holding Court 2's sheet. Only flagged
+  // on a clear read-back: courtOnSheet/dateMatches come back null whenever
+  // the model isn't confident, and null never counts as a mismatch here --
+  // an unreadable Court/Date box shouldn't nag someone who filled in
+  // everything else correctly.
+  const courtMismatch = mode === 'weekly'
+    && extracted.courtOnSheet != null && extracted.courtOnSheet !== courtNum;
+  const dateMismatch = extracted.dateMatches === false;
+  const hasIssue = sheetMismatch || courtMismatch || dateMismatch;
+
+  if (hasIssue && !payload.confirmedExtracted) {
     return json(200, {
       ok: true, mismatch: true, extracted,
       expectedSets, actualSets, expectedGames, actualGames,
+      courtMismatch, courtOnSheet: extracted.courtOnSheet ?? null, expectedCourt: courtNum,
+      dateMismatch, expectedDate: dateStr,
     });
   }
 
-  const dateStr = resolveDate({ mode, roundNum, finalsSlot });
   const slug = dateSlug(dateStr);
 
   // Prefix the blob key itself with the human-readable round/court/date so
@@ -156,10 +175,18 @@ exports.handler = async (event) => {
     id, mode, blockConst, keyLiteral, key,
     roundNum, courtNum, finalsSlot,
     extracted,
-    // Only ever true here -- this point is only reached on a mismatch when
+    // Only ever set here -- this point is only reached on a mismatch when
     // the uploader has already been warned and chose to submit anyway, so
-    // review.html can flag it rather than have it look like a clean read.
-    ...(sheetMismatch ? { mismatchAcknowledged: true } : {}),
+    // review.html can flag it (and say *why*) rather than have it look like
+    // a clean read.
+    ...(hasIssue ? {
+      mismatchAcknowledged: true,
+      mismatchDetail: {
+        expectedSets, actualSets, expectedGames, actualGames,
+        courtMismatch, courtOnSheet: extracted.courtOnSheet ?? null, expectedCourt: courtNum,
+        dateMismatch, expectedDate: dateStr,
+      },
+    } : {}),
     createdAt: new Date().toISOString(),
   });
 

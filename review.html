@@ -217,21 +217,27 @@
       return count > 1 ? `<span class="pill" style="background:var(--clay); color:var(--white); border-color:var(--clay);">Submitted ${count}&times;</span>` : '';
     }
 
-    // Flags a submission where the uploader was warned the sets and/or
-    // games totals didn't match the fixed invariant (6/48 weekly, 8/64
-    // finals -- see submit-sheet.js) and chose Submit Anyway rather than
-    // retaking the photo -- worth a closer look before approving, since it
-    // means the read is known-suspect.
+    // Flags a submission where the uploader was warned something didn't
+    // check out -- sets/games not matching the fixed invariant (6/48
+    // weekly, 8/64 finals), or the sheet's own Court/Date box disagreeing
+    // with what was selected -- and chose Submit Anyway rather than
+    // retaking the photo. mismatchDetail is stored by submit-sheet.js at
+    // upload time; older records from before that existed only have the
+    // plain boolean, so fall back to recomputing just the sets/games part.
     function mismatchPill(item) {
       if (!item.mismatchAcknowledged) return '';
-      const expectedSets = item.mode === 'finals' ? 8 : 6;
-      const expectedGames = item.mode === 'finals' ? 64 : 48;
-      const actualSets = item.extracted.setsA + item.extracted.setsB;
-      const actualGames = item.extracted.gamesA + item.extracted.gamesB;
+      const d = item.mismatchDetail || {
+        expectedSets: item.mode === 'finals' ? 8 : 6,
+        expectedGames: item.mode === 'finals' ? 64 : 48,
+        actualSets: item.extracted.setsA + item.extracted.setsB,
+        actualGames: item.extracted.gamesA + item.extracted.gamesB,
+      };
       const parts = [];
-      if (actualGames !== expectedGames) parts.push(`games ${actualGames}≠${expectedGames}`);
-      if (actualSets !== expectedSets) parts.push(`sets ${actualSets}≠${expectedSets}`);
-      return `<span class="pill" style="background:var(--clay); color:var(--white); border-color:var(--clay);" title="Uploader was warned this didn't add up and submitted anyway">⚠ ${parts.join(', ')}</span>`;
+      if (d.actualGames !== d.expectedGames) parts.push(`games ${d.actualGames}≠${d.expectedGames}`);
+      if (d.actualSets !== d.expectedSets) parts.push(`sets ${d.actualSets}≠${d.expectedSets}`);
+      if (d.courtMismatch) parts.push(`sheet says Court ${d.courtOnSheet}, not ${d.expectedCourt}`);
+      if (d.dateMismatch) parts.push(`sheet's date ≠ ${d.expectedDate}`);
+      return `<span class="pill" style="background:var(--clay); color:var(--white); border-color:var(--clay);" title="Uploader was warned this didn't check out and submitted anyway">⚠ ${parts.join(', ')}</span>`;
     }
 
     reviewList.innerHTML = items.map(item => {

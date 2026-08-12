@@ -230,16 +230,28 @@ function upsertFinalsWetWeek(content, stage) {
 // order differs from the fixture's -- this is what caused the Round 2,
 // Court 2 (Team 1 v Team 7) mismatch, where the sheet was filled in as
 // "7 V 1".
-async function readScoreSheet(base64Data, mediaType, isFinals, teamLabels) {
+//
+// expectedContext (optional): { expectedDate, expectedCourt }. The sheet
+// also has its own "COURT"/"DATE" boxes near the top, separate from the
+// per-side Total row -- reading these catches a different mistake than a
+// misread number: the photo being filed under the wrong court or round
+// entirely (e.g. picking Court 3 in the dropdown while holding Court 2's
+// sheet). expectedCourt is weekly-only (finals has no fixed court).
+async function readScoreSheet(base64Data, mediaType, isFinals, teamLabels, expectedContext) {
+  const setCount = isFinals ? 8 : 6;
+  const gameTotal = isFinals ? 64 : 48;
   const finalsNote = isFinals
     ? ' This is a finals sheet -- also read the explicit Winner box (whichever side, A or B, is marked/circled as the winner).'
     : '';
   const teamMatchNote = teamLabels
     ? ` This match is ${teamLabels.teamALabel} v ${teamLabels.teamBLabel}. The sheet has its own handwritten "TEAM ___ V TEAM ___" boxes near the top -- read which team number is written in each box first, and use THAT to work out which physical side/column of the sheet is Team A (${teamLabels.teamALabel}) and which is Team B (${teamLabels.teamBLabel}). Do not assume the side written first, or the side on the left, is automatically Team A -- the two teams may be written in either order.`
     : '';
-  const prompt = `You are reading a photo of a paper score sheet for a club tennis competition. Only read the "Total" row for each side (Team A and Team B) -- ignore player names, the individual pairing rows, bonus points, and the sheet's own Points column.${teamMatchNote}
-Sets are out of 6 total and can include .5 (a 4-4 game score in one set counts as a half-set draw). Games are the total games summed across all 6 sets (always sums to 48 between both sides).${finalsNote}
-Respond with ONLY a single JSON object, no other text, no markdown code fences, in exactly this shape: {"setsA": number, "setsB": number, "gamesA": number, "gamesB": number${isFinals ? ', "winner": "A" or "B"' : ''}}`;
+  const contextNote = expectedContext
+    ? ` This match is expected to be played on ${expectedContext.expectedDate}${expectedContext.expectedCourt ? `, Court ${expectedContext.expectedCourt}` : ''}. The sheet also has its own "COURT" and "DATE" boxes near the top (separate from the Total row) -- read those and report "courtOnSheet" (the number written in the COURT box, as a number, or null if illegible/blank) and "dateMatches" (true if the handwritten DATE box looks like the same calendar date as above -- minor format differences like "12/8" vs "12 Aug 2026" don't count as a mismatch -- false if it clearly looks like a different date, or null if illegible/blank/not confident either way).`
+    : '';
+  const prompt = `You are reading a photo of a paper score sheet for a club tennis competition. Only read the "Total" row for each side (Team A and Team B) -- ignore player names, the individual pairing rows, bonus points, and the sheet's own Points column.${teamMatchNote}${contextNote}
+Sets are out of ${setCount} total and can include .5 (a 4-4 game score in one set counts as a half-set draw). Games are the total games summed across all ${setCount} sets (always sums to ${gameTotal} between both sides).${finalsNote}
+Respond with ONLY a single JSON object, no other text, no markdown code fences, in exactly this shape: {"setsA": number, "setsB": number, "gamesA": number, "gamesB": number${isFinals ? ', "winner": "A" or "B"' : ''}${expectedContext ? ', "courtOnSheet": number or null, "dateMatches": true, false, or null' : ''}}`;
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
