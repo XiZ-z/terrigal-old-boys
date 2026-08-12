@@ -112,6 +112,7 @@ const RESULTS = {
   "1-1": { setsA: 5.5, setsB: 0.5, gamesA: 35, gamesB: 13 },
   "1-0": { setsA: 4, setsB: 2, gamesA: 29, gamesB: 19 },
   "2-3": { setsA: 4.5, setsB: 1.5, gamesA: 27, gamesB: 21 },
+  "2-1": { setsA: 4, setsB: 2, gamesA: 31, gamesB: 17 },
 };
 
 // ---------- Court display ----------
