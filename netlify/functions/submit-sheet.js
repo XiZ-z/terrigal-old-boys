@@ -93,11 +93,19 @@ exports.handler = async (event) => {
     ? { teamALabel: teamLabel(teamA), teamBLabel: teamLabel(teamB) }
     : null;
 
+  // A "submit anyway" resubmission (see the games-mismatch check below)
+  // carries the numbers the uploader already saw and confirmed, rather than
+  // reading the photo again -- reuses the already-paid-for vision read
+  // instead of re-running (and re-billing) it on the same image.
   let extracted;
-  try {
-    extracted = await readScoreSheet(photoBase64, mediaType, mode === 'finals', teamLabels);
-  } catch (err) {
-    return json(502, { error: `Could not read the photo: ${err.message}` });
+  if (payload.confirmedExtracted) {
+    extracted = payload.confirmedExtracted;
+  } else {
+    try {
+      extracted = await readScoreSheet(photoBase64, mediaType, mode === 'finals', teamLabels);
+    } catch (err) {
+      return json(502, { error: `Could not read the photo: ${err.message}` });
+    }
   }
 
   // The model doesn't always return the exact shape asked for on an
@@ -110,6 +118,26 @@ exports.handler = async (event) => {
   const winnerOk = mode !== 'finals' || extracted.winner === 'A' || extracted.winner === 'B';
   if (!hasAllNumbers || !winnerOk) {
     return json(502, { error: `Could not read this photo clearly (got: ${JSON.stringify(extracted)}) -- try again with a clearer, well-lit photo of the Total row.` });
+  }
+
+  // Weekly plays exactly 6 sets of 8 games each; finals plays 8 (the
+  // sudden-death tiebreaker, if needed, only decides the Winner box -- it
+  // has no row of its own in the sheet's SCORE table, so it isn't part of
+  // the recorded Total). Either way, both the sets count and the games
+  // count are hard invariants, not heuristics: every set is won 1-0 or
+  // drawn 0.5-0.5, so setsA+setsB always equals the number of sets played;
+  // games always sums to 8 per set. This caught a real misread: Round
+  // 2/Court 2 had Team 7's games read as 24 instead of 18.
+  const expectedSets = mode === 'weekly' ? 6 : 8;
+  const expectedGames = mode === 'weekly' ? 48 : 64;
+  const actualSets = extracted.setsA + extracted.setsB;
+  const actualGames = extracted.gamesA + extracted.gamesB;
+  const sheetMismatch = actualSets !== expectedSets || actualGames !== expectedGames;
+  if (sheetMismatch && !payload.confirmedExtracted) {
+    return json(200, {
+      ok: true, mismatch: true, extracted,
+      expectedSets, actualSets, expectedGames, actualGames,
+    });
   }
 
   const dateStr = resolveDate({ mode, roundNum, finalsSlot });
@@ -128,6 +156,10 @@ exports.handler = async (event) => {
     id, mode, blockConst, keyLiteral, key,
     roundNum, courtNum, finalsSlot,
     extracted,
+    // Only ever true here -- this point is only reached on a mismatch when
+    // the uploader has already been warned and chose to submit anyway, so
+    // review.html can flag it rather than have it look like a clean read.
+    ...(sheetMismatch ? { mismatchAcknowledged: true } : {}),
     createdAt: new Date().toISOString(),
   });
 

@@ -217,6 +217,23 @@
       return count > 1 ? `<span class="pill" style="background:var(--clay); color:var(--white); border-color:var(--clay);">Submitted ${count}&times;</span>` : '';
     }
 
+    // Flags a submission where the uploader was warned the sets and/or
+    // games totals didn't match the fixed invariant (6/48 weekly, 8/64
+    // finals -- see submit-sheet.js) and chose Submit Anyway rather than
+    // retaking the photo -- worth a closer look before approving, since it
+    // means the read is known-suspect.
+    function mismatchPill(item) {
+      if (!item.mismatchAcknowledged) return '';
+      const expectedSets = item.mode === 'finals' ? 8 : 6;
+      const expectedGames = item.mode === 'finals' ? 64 : 48;
+      const actualSets = item.extracted.setsA + item.extracted.setsB;
+      const actualGames = item.extracted.gamesA + item.extracted.gamesB;
+      const parts = [];
+      if (actualGames !== expectedGames) parts.push(`games ${actualGames}≠${expectedGames}`);
+      if (actualSets !== expectedSets) parts.push(`sets ${actualSets}≠${expectedSets}`);
+      return `<span class="pill" style="background:var(--clay); color:var(--white); border-color:var(--clay);" title="Uploader was warned this didn't add up and submitted anyway">⚠ ${parts.join(', ')}</span>`;
+    }
+
     reviewList.innerHTML = items.map(item => {
       if (item.wet && item.mode === 'finals') {
         const stageOptions = FINALS_STAGES_LIST.map(s =>
@@ -286,7 +303,7 @@
         <div class="review-item" data-id="${item.id}">
           <img data-photo-id="${item.id}" data-photo-store="pending" alt="Score sheet photo" style="cursor:zoom-in; background:var(--paper-line); min-height:120px;" onclick="openLightbox(this.src)">
           <div>
-            <div class="review-meta"><span id="matchup-${item.id}">${matchupPrefix} — ${teamA} v ${teamB}</span> ${duplicatePill(item)} &middot; submitted ${new Date(item.createdAt).toLocaleString()}</div>
+            <div class="review-meta"><span id="matchup-${item.id}">${matchupPrefix} — ${teamA} v ${teamB}</span> ${duplicatePill(item)} ${mismatchPill(item)} &middot; submitted ${new Date(item.createdAt).toLocaleString()}</div>
             <div class="field-grid">
               ${locationField}
               <div class="field-row"><label>Sets — <span class="team-label" data-item="${item.id}" data-team="A">${teamA}</span></label><input type="number" step="0.5" id="setsA-${item.id}" value="${item.extracted.setsA}"></div>

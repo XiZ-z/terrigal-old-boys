@@ -112,6 +112,19 @@
   </div>
 </div>
 
+<div id="mismatch-modal" class="modal-overlay" style="display:none;">
+  <div class="modal-card modal-card--warning">
+    <div class="modal-eyebrow">Warning</div>
+    <div class="modal-icon modal-icon-warning">⚠️</div>
+    <h3>Numbers Don't Add Up</h3>
+    <div id="mismatch-modal-body"></div>
+    <div class="review-actions" style="justify-content:center; margin-top:14px;">
+      <button type="button" class="btn btn-reject" id="mismatch-retake-btn">Retake Photo</button>
+      <button type="button" class="btn btn-primary" id="mismatch-submit-anyway-btn">Submit Anyway</button>
+    </div>
+  </div>
+</div>
+
 <div id="footer-placeholder"></div>
 
 <script src="nav.js"></script>
@@ -390,6 +403,128 @@
   successModalClose.addEventListener('click', hideSuccessModal);
   successModal.addEventListener('click', (e) => { if (e.target === successModal) hideSuccessModal(); });
 
+  // Shared across the clean-success, mismatch-warning, recalculate, and
+  // submit-anyway paths below, so team resolution and table markup aren't
+  // duplicated across all four.
+  function resultTeamLabels(payload) {
+    if (payload.mode === 'weekly') {
+      const slot = slotForCourt(payload.roundNum, payload.courtNum);
+      const [teamA, teamB] = ALL_ROUNDS[payload.roundNum - 1][slot];
+      return { labelA: teamLabel(teamA), labelB: teamLabel(teamB) };
+    }
+    const slotInfo = computeFinalsState()[payload.finalsSlot];
+    return {
+      labelA: slotInfo && slotInfo.teamA ? teamLabel(slotInfo.teamA) : 'Team A',
+      labelB: slotInfo && slotInfo.teamB ? teamLabel(slotInfo.teamB) : 'Team B',
+    };
+  }
+  function scoreTableHTML(labelA, labelB, extracted, includeBonus) {
+    const bonusRows = includeBonus ? (() => {
+      const bp = matchPoints(extracted);
+      return `
+        <tr><td>Games bonus</td><td>${bp.gamesBonusA}</td><td>${bp.gamesBonusB}</td></tr>
+        <tr><td>Sets bonus</td><td>${bp.setsBonusA}</td><td>${bp.setsBonusB}</td></tr>
+        <tr class="total"><td>Total points</td><td>${bp.totalA}</td><td>${bp.totalB}</td></tr>`;
+    })() : '';
+    return `
+      <table class="score-sheet">
+        <thead><tr><th></th><th>${labelA}</th><th>${labelB}</th></tr></thead>
+        <tbody>
+          <tr><td>Games</td><td>${extracted.gamesA}</td><td>${extracted.gamesB}</td></tr>
+          <tr><td>Sets</td><td>${extracted.setsA}</td><td>${extracted.setsB}</td></tr>
+          ${bonusRows}
+        </tbody>
+      </table>`;
+  }
+  function showGenericSuccess(title, statusText, modalHTML) {
+    status.className = 'status-msg success';
+    status.textContent = statusText;
+    showSuccessModal(title, modalHTML);
+    form.reset();
+    photoFilename.textContent = '';
+    setMode(mode);
+  }
+  function showResultSuccess(payload, extracted, note) {
+    const { labelA, labelB } = resultTeamLabels(payload);
+    const bp = matchPoints(extracted);
+    const statusText = `${labelA}: ${extracted.gamesA} games, ${extracted.setsA} sets, ${bp.totalA} points — ${labelB}: ${extracted.gamesB} games, ${extracted.setsB} sets, ${bp.totalB} points. ${note}`;
+    showGenericSuccess('Thanks — Submitted!', statusText, scoreTableHTML(labelA, labelB, extracted, true) + `<p class="modal-note">${note}</p>`);
+  }
+  async function postSubmitSheet(payload) {
+    const res = await fetch('/.netlify/functions/submit-sheet', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return { res, data: await res.json() };
+  }
+
+  // Sheet-math warning (see submit-sheet.js): every set is won 1-0 or drawn
+  // 0.5-0.5, and games always sum to 8 per set, so setsA+setsB and
+  // gamesA+gamesB are hard invariants (6/48 weekly, 8/64 finals) -- if
+  // either is off, something was misread. Nothing is staged for review yet
+  // when this fires -- Retake starts over with a fresh photo (after
+  // re-checking the sheet's own addition), and Submit Anyway re-sends the
+  // already-extracted numbers to actually persist it, flagged for closer
+  // review.
+  const mismatchModal = document.getElementById('mismatch-modal');
+  const mismatchModalBody = document.getElementById('mismatch-modal-body');
+  const mismatchRetakeBtn = document.getElementById('mismatch-retake-btn');
+  const mismatchSubmitAnywayBtn = document.getElementById('mismatch-submit-anyway-btn');
+  let pendingMismatch = null; // { payload, extracted }
+
+  function mismatchDescription(data) {
+    const parts = [];
+    if (data.actualGames !== data.expectedGames) parts.push(`games total <strong>${data.actualGames}</strong> (should be <strong>${data.expectedGames}</strong>)`);
+    if (data.actualSets !== data.expectedSets) parts.push(`sets total <strong>${data.actualSets}</strong> (should be <strong>${data.expectedSets}</strong>)`);
+    return parts.join(' and ');
+  }
+
+  function showMismatchModal(payload, data) {
+    pendingMismatch = { payload, extracted: data.extracted };
+    const { labelA, labelB } = resultTeamLabels(payload);
+    mismatchModalBody.innerHTML = `
+      <p>${labelA} v ${labelB} — ${mismatchDescription(data)}.</p>
+      ${scoreTableHTML(labelA, labelB, data.extracted, false)}
+      <p class="modal-note">Double-check the games and sets add up correctly on the paper sheet, then retake the photo. Already correct? Submit anyway for review.</p>`;
+    mismatchModal.style.display = 'flex';
+  }
+  function hideMismatchModal() { mismatchModal.style.display = 'none'; }
+  mismatchModal.addEventListener('click', (e) => { if (e.target === mismatchModal) hideMismatchModal(); });
+
+  mismatchRetakeBtn.addEventListener('click', () => {
+    hideMismatchModal();
+    pendingMismatch = null;
+    photoInput.value = '';
+    photoFilename.textContent = '';
+    status.className = 'status-msg error';
+    status.textContent = 'Double-check the totals on the sheet, then take a clearer photo and submit again.';
+  });
+
+  mismatchSubmitAnywayBtn.addEventListener('click', async () => {
+    if (!pendingMismatch) return;
+    hideMismatchModal();
+    mismatchSubmitAnywayBtn.disabled = true;
+    status.className = 'status-msg';
+    status.textContent = 'Submitting…';
+    try {
+      const payload = pendingMismatch.payload;
+      const { res, data } = await postSubmitSheet({ ...payload, confirmedExtracted: pendingMismatch.extracted });
+      if (!res.ok) {
+        status.className = 'status-msg error';
+        status.textContent = data.error || 'Something went wrong submitting this.';
+        return;
+      }
+      showResultSuccess(payload, data.extracted, "Submitted despite the mismatch -- it'll be double-checked before it goes live.");
+      pendingMismatch = null;
+    } catch {
+      status.className = 'status-msg error';
+      status.textContent = 'Could not submit — check your connection and try again.';
+    } finally {
+      mismatchSubmitAnywayBtn.disabled = false;
+    }
+  });
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -425,69 +560,23 @@
         }
       }
 
-      const res = await fetch('/.netlify/functions/submit-sheet', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
+      const { res, data } = await postSubmitSheet(payload);
 
       if (!res.ok) {
         status.className = 'status-msg error';
         status.textContent = data.error || 'Something went wrong submitting this.';
+      } else if (data.mismatch) {
+        status.className = 'status-msg';
+        status.textContent = `${mismatchDescription(data).replace(/<\/?strong>/g, '')} -- check the popup.`;
+        showMismatchModal(payload, data);
+      } else if (mode === 'wet' && wetSubMode === 'weekly') {
+        const statusText = `Reported Round ${payload.roundNum} as WET. Awaiting approval before it's marked postponed.`;
+        showGenericSuccess('Reported!', statusText, `<p>${statusText}</p>`);
+      } else if (mode === 'wet') {
+        const statusText = `Reported ${FINALS_STAGE_LABELS[payload.finalsStage]} as WET. Awaiting approval before it's pushed back a week.`;
+        showGenericSuccess('Reported!', statusText, `<p>${statusText}</p>`);
       } else {
-        status.className = 'status-msg success';
-        let statusText, modalHTML;
-        if (mode === 'wet' && wetSubMode === 'weekly') {
-          statusText = `Reported Round ${payload.roundNum} as WET. Awaiting approval before it's marked postponed.`;
-          modalHTML = `<p>${statusText}</p>`;
-        } else if (mode === 'wet') {
-          statusText = `Reported ${FINALS_STAGE_LABELS[payload.finalsStage]} as WET. Awaiting approval before it's pushed back a week.`;
-          modalHTML = `<p>${statusText}</p>`;
-        } else {
-          // Same team lookup the matchup preview already used to show this
-          // pairing before they hit submit -- repeating it here so the
-          // confirmation says whose score belongs to whom, not just bare
-          // numbers where team A/B order has to be inferred or remembered.
-          let teamA, teamB;
-          if (mode === 'weekly') {
-            const slot = slotForCourt(payload.roundNum, payload.courtNum);
-            [teamA, teamB] = ALL_ROUNDS[payload.roundNum - 1][slot];
-          } else {
-            const slotInfo = computeFinalsState()[payload.finalsSlot];
-            teamA = slotInfo && slotInfo.teamA;
-            teamB = slotInfo && slotInfo.teamB;
-          }
-          const e = data.extracted;
-          const bp = matchPoints(e);
-          const labelA = teamA ? teamLabel(teamA) : 'Team A';
-          const labelB = teamB ? teamLabel(teamB) : 'Team B';
-          statusText = `${labelA}: ${e.gamesA} games, ${e.setsA} sets, ${bp.totalA} points — ${labelB}: ${e.gamesB} games, ${e.setsB} sets, ${bp.totalB} points. Awaiting approval before it goes live.`;
-          // Laid out as rows/columns matching the paper score sheet's own
-          // Games / Sets / Bonus / Total structure (see the weekly sheet
-          // reviewed for the data-entry workflow) rather than a plain
-          // sentence, so it reads the same way as what's on the sheet
-          // being checked against.
-          modalHTML = `
-            <table class="score-sheet">
-              <thead>
-                <tr><th></th><th>${labelA}</th><th>${labelB}</th></tr>
-              </thead>
-              <tbody>
-                <tr><td>Games</td><td>${e.gamesA}</td><td>${e.gamesB}</td></tr>
-                <tr><td>Sets</td><td>${e.setsA}</td><td>${e.setsB}</td></tr>
-                <tr><td>Games bonus</td><td>${bp.gamesBonusA}</td><td>${bp.gamesBonusB}</td></tr>
-                <tr><td>Sets bonus</td><td>${bp.setsBonusA}</td><td>${bp.setsBonusB}</td></tr>
-                <tr class="total"><td>Total points</td><td>${bp.totalA}</td><td>${bp.totalB}</td></tr>
-              </tbody>
-            </table>
-            <p class="modal-note">Awaiting approval before it goes live.</p>`;
-        }
-        status.textContent = statusText;
-        showSuccessModal(mode === 'wet' ? 'Reported!' : 'Thanks — Submitted!', modalHTML);
-        form.reset();
-        photoFilename.textContent = '';
-        setMode(mode);
+        showResultSuccess(payload, data.extracted, 'Awaiting approval before it goes live.');
       }
     } catch (err) {
       status.className = 'status-msg error';

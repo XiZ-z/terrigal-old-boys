@@ -64,9 +64,14 @@ exports.handler = async (event) => {
     }
     // Sanity bounds -- catches a fat-finger correction typo (e.g. "44"
     // instead of "4") before it corrupts the ladder, rather than trusting
-    // whatever gets typed into the review page's number fields.
-    if (setsA < 0 || setsA > 6 || setsB < 0 || setsB > 6 || gamesA < 0 || gamesA > 48 || gamesB < 0 || gamesB > 48) {
-      return json(400, { error: 'Sets must be 0-6 and games 0-48 -- check for a typo before approving.' });
+    // whatever gets typed into the review page's number fields. Weekly
+    // plays 6 sets of 8 games each (max 48 games); finals plays 8 sets (max
+    // 64 games) -- using weekly's bounds for a finals result would wrongly
+    // reject a genuine finals score.
+    const maxSets = record.mode === 'finals' ? 8 : 6;
+    const maxGames = record.mode === 'finals' ? 64 : 48;
+    if (setsA < 0 || setsA > maxSets || setsB < 0 || setsB > maxSets || gamesA < 0 || gamesA > maxGames || gamesB < 0 || gamesB > maxGames) {
+      return json(400, { error: `Sets must be 0-${maxSets} and games 0-${maxGames} -- check for a typo before approving.` });
     }
 
     // Round/court (weekly) or finals slot (finals) can be corrected at
