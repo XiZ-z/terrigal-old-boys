@@ -2,7 +2,7 @@
 // Reads the totals off it with Claude vision and stages it for Ash to
 // review; nothing here touches data.js directly.
 const { randomUUID } = require('crypto');
-const { slotForCourt, ALL_ROUNDS, teamLabel, computeFinalsState } = require('../../data.js');
+const { slotForCourt, ALL_ROUNDS, teamLabel, computeFinalsState, matchPoints } = require('../../data.js');
 const { sheetsStore, json, readScoreSheet, checkRateLimit, resolveDate, dateSlug, FINALS_SLOTS, FINALS_STAGES } = require('./lib/shared');
 
 exports.handler = async (event) => {
@@ -149,7 +149,19 @@ exports.handler = async (event) => {
   const courtMismatch = mode === 'weekly'
     && extracted.courtOnSheet != null && extracted.courtOnSheet !== courtNum;
   const dateMismatch = extracted.dateMatches === false;
-  const hasIssue = sheetMismatch || courtMismatch || dateMismatch;
+
+  // Finals-only: the Winner box only exists to record a sudden-death
+  // tiebreaker outcome, needed when the two sides are dead level on points
+  // after bonus. Whenever they're NOT level, whoever has more points simply
+  // wins -- no tiebreaker involved -- so the Winner box should always agree
+  // with that. If it names the side with fewer points, either the Winner
+  // box or the Games/Sets Total was misread; a genuine tie is the only case
+  // where the Winner box is the sole source of truth and can't be checked.
+  const bp = mode === 'finals' ? matchPoints(extracted) : null;
+  const expectedWinner = bp && bp.totalA !== bp.totalB ? (bp.totalA > bp.totalB ? 'A' : 'B') : null;
+  const winnerMismatch = expectedWinner != null && extracted.winner !== expectedWinner;
+
+  const hasIssue = sheetMismatch || courtMismatch || dateMismatch || winnerMismatch;
 
   if (hasIssue && !payload.confirmedExtracted) {
     return json(200, {
@@ -157,6 +169,7 @@ exports.handler = async (event) => {
       expectedSets, actualSets, expectedGames, actualGames,
       courtMismatch, courtOnSheet: extracted.courtOnSheet ?? null, expectedCourt: courtNum,
       dateMismatch, expectedDate: dateStr,
+      winnerMismatch, winnerOnSheet: extracted.winner ?? null, expectedWinner,
     });
   }
 
@@ -185,6 +198,7 @@ exports.handler = async (event) => {
         expectedSets, actualSets, expectedGames, actualGames,
         courtMismatch, courtOnSheet: extracted.courtOnSheet ?? null, expectedCourt: courtNum,
         dateMismatch, expectedDate: dateStr,
+        winnerMismatch, winnerOnSheet: extracted.winner ?? null, expectedWinner,
       },
     } : {}),
     createdAt: new Date().toISOString(),

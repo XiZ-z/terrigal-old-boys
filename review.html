@@ -219,10 +219,11 @@
 
     // Flags a submission where the uploader was warned something didn't
     // check out -- sets/games not matching the fixed invariant (6/48
-    // weekly, 8/64 finals), or the sheet's own Court/Date box disagreeing
-    // with what was selected -- and chose Submit Anyway rather than
-    // retaking the photo. mismatchDetail is stored by submit-sheet.js at
-    // upload time; older records from before that existed only have the
+    // weekly, 8/64 finals), the sheet's own Court/Date box disagreeing with
+    // what was selected, or (finals only) the Winner box contradicting
+    // which side actually has more points -- and chose Submit Anyway rather
+    // than retaking the photo. mismatchDetail is stored by submit-sheet.js
+    // at upload time; older records from before that existed only have the
     // plain boolean, so fall back to recomputing just the sets/games part.
     function mismatchPill(item) {
       if (!item.mismatchAcknowledged) return '';
@@ -237,6 +238,7 @@
       if (d.actualSets !== d.expectedSets) parts.push(`sets ${d.actualSets}≠${d.expectedSets}`);
       if (d.courtMismatch) parts.push(`sheet says Court ${d.courtOnSheet}, not ${d.expectedCourt}`);
       if (d.dateMismatch) parts.push(`sheet's date ≠ ${d.expectedDate}`);
+      if (d.winnerMismatch) parts.push(`Winner box says ${d.winnerOnSheet}, points favor ${d.expectedWinner}`);
       return `<span class="pill" style="background:var(--clay); color:var(--white); border-color:var(--clay);" title="Uploader was warned this didn't check out and submitted anyway">⚠ ${parts.join(', ')}</span>`;
     }
 

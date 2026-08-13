@@ -473,12 +473,17 @@
   const mismatchSubmitAnywayBtn = document.getElementById('mismatch-submit-anyway-btn');
   let pendingMismatch = null; // { payload, extracted }
 
-  function mismatchDescription(data) {
+  function mismatchDescription(data, labelA, labelB) {
     const parts = [];
     if (data.actualGames !== data.expectedGames) parts.push(`games total <strong>${data.actualGames}</strong> (should be <strong>${data.expectedGames}</strong>)`);
     if (data.actualSets !== data.expectedSets) parts.push(`sets total <strong>${data.actualSets}</strong> (should be <strong>${data.expectedSets}</strong>)`);
     if (data.courtMismatch) parts.push(`the sheet's own Court box says <strong>Court ${data.courtOnSheet}</strong>, not Court ${data.expectedCourt}`);
     if (data.dateMismatch) parts.push(`the sheet's Date box doesn't look like <strong>${data.expectedDate}</strong>`);
+    if (data.winnerMismatch) {
+      const onSheet = data.winnerOnSheet === 'A' ? labelA : labelB;
+      const byPoints = data.expectedWinner === 'A' ? labelA : labelB;
+      parts.push(`the Winner box says <strong>${onSheet}</strong>, but the points clearly favor <strong>${byPoints}</strong> (no tie, so no tiebreaker needed)`);
+    }
     return parts.join(' and ');
   }
 
@@ -491,6 +496,7 @@
     if (data.courtMismatch) titles.push('Wrong Court');
     if (data.dateMismatch) titles.push('Incorrect Round');
     if (data.actualGames !== data.expectedGames || data.actualSets !== data.expectedSets) titles.push("Numbers Don't Add Up");
+    if (data.winnerMismatch) titles.push('Wrong Winner');
     return titles.join(' & ');
   }
 
@@ -499,9 +505,9 @@
     const { labelA, labelB } = resultTeamLabels(payload);
     document.getElementById('mismatch-modal-title').textContent = mismatchTitle(data);
     mismatchModalBody.innerHTML = `
-      <p>${labelA} v ${labelB} — ${mismatchDescription(data)}.</p>
+      <p>${labelA} v ${labelB} — ${mismatchDescription(data, labelA, labelB)}.</p>
       ${scoreTableHTML(labelA, labelB, data.extracted, false)}
-      <p class="modal-note">Double-check the paper sheet -- the right court/round, and the games and sets adding up correctly -- then retake the photo. Already correct? Submit anyway for review.</p>`;
+      <p class="modal-note">Double-check the paper sheet -- the right court/round, the games and sets adding up correctly, and the Winner box -- then retake the photo. Already correct? Submit anyway for review.</p>`;
     mismatchModal.style.display = 'flex';
   }
   function hideMismatchModal() { mismatchModal.style.display = 'none'; }
@@ -582,7 +588,8 @@
         status.textContent = data.error || 'Something went wrong submitting this.';
       } else if (data.mismatch) {
         status.className = 'status-msg';
-        status.textContent = `${mismatchDescription(data).replace(/<\/?strong>/g, '')} -- check the popup.`;
+        const { labelA, labelB } = resultTeamLabels(payload);
+        status.textContent = `${mismatchDescription(data, labelA, labelB).replace(/<\/?strong>/g, '')} -- check the popup.`;
         showMismatchModal(payload, data);
       } else if (mode === 'wet' && wetSubMode === 'weekly') {
         const statusText = `Reported Round ${payload.roundNum} as WET. Awaiting approval before it's marked postponed.`;
