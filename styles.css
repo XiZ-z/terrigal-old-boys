@@ -540,6 +540,27 @@ footer{
 .modal-card p{margin:0 0 22px; font-size:14px; color:var(--ink-soft); line-height:1.5;}
 .modal-card .btn{width:100%;}
 
+/* Deliberately louder than the plain success modal -- this fires when a
+   photo read failed its own internal sanity check (games not summing to
+   48), so it needs to read as "stop and look" rather than blend in with
+   routine confirmations. The pulse runs twice then settles on a solid red
+   border/title, rather than looping forever and becoming visual noise. */
+.modal-card--warning{
+  border:3px solid var(--clay);
+  animation:mismatch-pulse 1.2s ease-out 2;
+}
+.modal-card--warning h3{color:var(--clay);}
+.modal-icon-warning{background:var(--clay); color:var(--white);}
+.modal-eyebrow{
+  font-size:22px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase;
+  color:var(--clay); margin-bottom:10px;
+}
+@keyframes mismatch-pulse{
+  0%{box-shadow:0 0 0 0 rgba(193,89,47,0.55);}
+  70%{box-shadow:0 0 0 16px rgba(193,89,47,0);}
+  100%{box-shadow:0 0 0 0 rgba(193,89,47,0);}
+}
+
 .score-sheet{
   width:100%; border-collapse:collapse; margin-bottom:16px; text-align:left;
   border:1px solid var(--paper-line); border-radius:10px; overflow:hidden;
