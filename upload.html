@@ -484,6 +484,7 @@
       const byPoints = data.expectedWinner === 'A' ? labelA : labelB;
       parts.push(`the Winner box says <strong>${onSheet}</strong>, but the points clearly favor <strong>${byPoints}</strong> (no tie, so no tiebreaker needed)`);
     }
+    if (data.totalMismatch) parts.push(`the sheet's own TOTAL box reads <strong>${data.sheetTotalA}–${data.sheetTotalB}</strong>, but Points + Bonus works out to <strong>${data.expectedTotalA}–${data.expectedTotalB}</strong>`);
     return parts.join(' and ');
   }
 
@@ -497,6 +498,7 @@
     if (data.dateMismatch) titles.push('Incorrect Round');
     if (data.actualGames !== data.expectedGames || data.actualSets !== data.expectedSets) titles.push("Numbers Don't Add Up");
     if (data.winnerMismatch) titles.push('Wrong Winner');
+    if (data.totalMismatch) titles.push("Total Doesn't Match");
     return titles.join(' & ');
   }
 
