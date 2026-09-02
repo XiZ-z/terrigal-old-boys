@@ -254,8 +254,13 @@ function computeSeasonRecords(){
       if(curW > maxW) maxW = curW;
       if(curL > maxL) maxL = curL;
     });
-    if(maxW > 0 && (!bestWinStreak || maxW > bestWinStreak.streak)) bestWinStreak = { team: r.team, streak: maxW };
-    if(maxL > 0 && (!bestLossStreak || maxL > bestLossStreak.streak)) bestLossStreak = { team: r.team, streak: maxL };
+    // curW/curL hold each team's streak as of their most recent match once
+    // the loop above finishes -- comparing that to the historical max says
+    // whether the record streak is still ongoing (e.g. still "due a win")
+    // or has since been broken by a later win/draw, so the record card can
+    // stop claiming a present-tense state that's no longer true.
+    if(maxW > 0 && (!bestWinStreak || maxW > bestWinStreak.streak)) bestWinStreak = { team: r.team, streak: maxW, current: curW === maxW };
+    if(maxL > 0 && (!bestLossStreak || maxL > bestLossStreak.streak)) bestLossStreak = { team: r.team, streak: maxL, current: curL === maxL };
   });
 
   return { biggestWin, closest, mostLopsidedSets, bestWinStreak, bestLossStreak };
