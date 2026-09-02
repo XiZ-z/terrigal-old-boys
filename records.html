@@ -132,7 +132,7 @@
         captain: teamCaptain(rec.bestWinStreak.team),
         label: 'Longest win streak',
         value: `${rec.bestWinStreak.streak} match${rec.bestWinStreak.streak === 1 ? '' : 'es'}`,
-        detail: `and counting`,
+        detail: rec.bestWinStreak.current ? `and counting` : `since broken`,
         href: `fixtures.html?team=${rec.bestWinStreak.team}`,
       }));
     }
@@ -144,7 +144,7 @@
         teamClass: 'record-team--loss',
         label: 'Longest losing streak',
         value: `${rec.bestLossStreak.streak} match${rec.bestLossStreak.streak === 1 ? '' : 'es'}`,
-        detail: `due a win`,
+        detail: rec.bestLossStreak.current ? `due a win` : `since snapped`,
         href: `fixtures.html?team=${rec.bestLossStreak.team}`,
       }));
     }

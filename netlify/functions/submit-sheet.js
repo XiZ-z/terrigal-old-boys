@@ -157,11 +157,23 @@ exports.handler = async (event) => {
   // with that. If it names the side with fewer points, either the Winner
   // box or the Games/Sets Total was misread; a genuine tie is the only case
   // where the Winner box is the sole source of truth and can't be checked.
-  const bp = mode === 'finals' ? matchPoints(extracted) : null;
-  const expectedWinner = bp && bp.totalA !== bp.totalB ? (bp.totalA > bp.totalB ? 'A' : 'B') : null;
+  const bp = matchPoints(extracted);
+  const expectedWinner = mode === 'finals' && bp.totalA !== bp.totalB ? (bp.totalA > bp.totalB ? 'A' : 'B') : null;
   const winnerMismatch = expectedWinner != null && extracted.winner !== expectedWinner;
 
-  const hasIssue = sheetMismatch || courtMismatch || dateMismatch || winnerMismatch;
+  // Cross-checks the Total row's POINTS value against the sheet's own
+  // separate grand TOTAL box (Points + Bonus, added up by whoever filled
+  // in the sheet) -- an independent check from the setsA+setsB=6/48
+  // invariant above, since a misread pair of digits can coincidentally
+  // still sum to the right total while still being individually wrong
+  // (this is what happened on Round 3/Court 2: the grand TOTAL box's own
+  // 5.5/4.5 got read as the sets figure instead of the Total row's actual
+  // 3.5/2.5). Only flagged when the model was confident enough to read the
+  // box at all -- null (illegible/blank) never counts as a mismatch.
+  const totalMismatch = extracted.sheetTotalA != null && extracted.sheetTotalB != null
+    && (extracted.sheetTotalA !== bp.totalA || extracted.sheetTotalB !== bp.totalB);
+
+  const hasIssue = sheetMismatch || courtMismatch || dateMismatch || winnerMismatch || totalMismatch;
 
   if (hasIssue && !payload.confirmedExtracted) {
     return json(200, {
@@ -170,6 +182,7 @@ exports.handler = async (event) => {
       courtMismatch, courtOnSheet: extracted.courtOnSheet ?? null, expectedCourt: courtNum,
       dateMismatch, expectedDate: dateStr,
       winnerMismatch, winnerOnSheet: extracted.winner ?? null, expectedWinner,
+      totalMismatch, sheetTotalA: extracted.sheetTotalA ?? null, sheetTotalB: extracted.sheetTotalB ?? null, expectedTotalA: bp.totalA, expectedTotalB: bp.totalB,
     });
   }
 
@@ -199,6 +212,7 @@ exports.handler = async (event) => {
         courtMismatch, courtOnSheet: extracted.courtOnSheet ?? null, expectedCourt: courtNum,
         dateMismatch, expectedDate: dateStr,
         winnerMismatch, winnerOnSheet: extracted.winner ?? null, expectedWinner,
+        totalMismatch, sheetTotalA: extracted.sheetTotalA ?? null, sheetTotalB: extracted.sheetTotalB ?? null, expectedTotalA: bp.totalA, expectedTotalB: bp.totalB,
       },
     } : {}),
     createdAt: new Date().toISOString(),

@@ -239,6 +239,7 @@
       if (d.courtMismatch) parts.push(`sheet says Court ${d.courtOnSheet}, not ${d.expectedCourt}`);
       if (d.dateMismatch) parts.push(`sheet's date ≠ ${d.expectedDate}`);
       if (d.winnerMismatch) parts.push(`Winner box says ${d.winnerOnSheet}, points favor ${d.expectedWinner}`);
+      if (d.totalMismatch) parts.push(`sheet's TOTAL ${d.sheetTotalA}–${d.sheetTotalB} ≠ computed ${d.expectedTotalA}–${d.expectedTotalB}`);
       return `<span class="pill" style="background:var(--clay); color:var(--white); border-color:var(--clay);" title="Uploader was warned this didn't check out and submitted anyway">⚠ ${parts.join(', ')}</span>`;
     }
 
