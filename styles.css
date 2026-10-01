@@ -615,3 +615,16 @@ footer{
 }
 .photo-lightbox.show{display:flex;}
 .photo-lightbox img{max-width:100%; max-height:100%; border-radius:8px; box-shadow:0 20px 50px -10px rgba(0,0,0,0.6);}
+
+/* ---------- 2027 sign-up banner (home) ---------- */
+.signup-banner{
+  display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap;
+  background:var(--court); color:var(--paper);
+  border-radius:var(--radius); padding:20px 24px; margin-bottom:22px;
+}
+.signup-copy{flex:1 1 320px;}
+.signup-copy .eyebrow{font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--ball);}
+.signup-copy h2{font-family:'Bebas Neue', sans-serif; font-size:30px; letter-spacing:0.02em; margin:2px 0 6px; font-weight:400;}
+.signup-copy p{margin:0; font-size:14.5px; line-height:1.5; color:#D9E3DF; max-width:62ch;}
+.signup-copy strong{color:var(--white);}
+.signup-btn{display:inline-block; text-decoration:none; white-space:nowrap;}
