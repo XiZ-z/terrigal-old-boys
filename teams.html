@@ -21,13 +21,127 @@
 
 <main>
   <div class="section-title">Teams</div>
-  <p class="section-sub">Eight teams, always known simply as Team 1 through Team 8.</p>
-  <div class="team-grid" id="team-grid"></div>
+  <div class="mode-toggle">
+    <button type="button" id="tab-teams" class="active">2026 Teams</button>
+    <button type="button" id="tab-signups">2027 Sign-ups</button>
+  </div>
+
+  <div id="teams-panel">
+    <p class="section-sub">Eight teams, always known simply as Team 1 through Team 8.</p>
+    <div class="team-grid" id="team-grid"></div>
+  </div>
+
+  <div id="signups-panel" style="display:none;">
+    <p class="section-sub">2027 Season 1 has 32 places. Current players: confirm your spot by <strong>Friday 1 January 2027</strong>. After that, unclaimed spots go to the waiting list.</p>
+    <div id="signups-body"><p class="empty-note">Loading sign-ups…</p></div>
+    <a class="btn btn-primary signup-btn" href="https://docs.google.com/forms/d/e/1FAIpQLSdG2gWx5Bs1DfMw_SvzTPX312fSQcymbWWijgfsncIs842vsg/viewform" target="_blank" rel="noopener">Sign up for 2027</a>
+  </div>
 </main>
 
 <div id="footer-placeholder"></div>
 
 <script>
+  // "Publish to web" CSV link for the RSVP sheet's names-only "Public" tab --
+  // NEVER the raw "Form Responses 1" tab, which holds mobile numbers. Expected
+  // shape: row 1 headers; column A = confirmed current players ("I'm a current
+  // player and I want to confirm my spot"); column B = waiting list ("I'm new
+  // and want to join the waiting list"), in sign-up order since it's a queue.
+  const SIGNUPS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTLevsCiALF_Ac-vgvpj978HdXvohiVhDq5Ltk7OXu_9U5VKdz5ZlCPZeDMCbWrucgS73mRWls-mL-Y/pub?gid=495981148&single=true&output=csv';
+  const SIGNUP_PLACES = 32;
+
+  // Minimal CSV parser -- handles quoted fields and doubled quotes, which is
+  // all a published Google Sheet emits.
+  function parseCSV(text){
+    const rows = [];
+    let row = [], field = '', inQuotes = false;
+    for(let i = 0; i < text.length; i++){
+      const ch = text[i];
+      if(inQuotes){
+        if(ch === '"' && text[i+1] === '"'){ field += '"'; i++; }
+        else if(ch === '"') inQuotes = false;
+        else field += ch;
+      } else if(ch === '"') inQuotes = true;
+      else if(ch === ','){ row.push(field); field = ''; }
+      else if(ch === '\n'){ row.push(field); rows.push(row); row = []; field = ''; }
+      else if(ch !== '\r') field += ch;
+    }
+    if(field !== '' || row.length) { row.push(field); rows.push(row); }
+    return rows;
+  }
+
+  // First name + surname initial only ("Ashley R."), whatever the sheet
+  // sends -- a second line of defence in case the Public tab's formula ever
+  // gets changed to output full surnames.
+  function shortName(full){
+    const parts = full.trim().split(/\s+/);
+    const first = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+    if(parts.length === 1) return first;
+    return `${first} ${parts[parts.length - 1].charAt(0).toUpperCase()}.`;
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  }
+
+  function renderSignups(names, waitlistNames){
+    const filled = Math.min(names.length, SIGNUP_PLACES);
+    const slots = Array.from({ length: SIGNUP_PLACES }, (_, i) =>
+      `<span class="slot${i < filled ? ' slot--filled' : ''}"></span>`).join('');
+    const status = filled >= SIGNUP_PLACES
+      ? `All ${SIGNUP_PLACES} places filled. New sign-ups join the waiting list.`
+      : `${SIGNUP_PLACES - filled} place${SIGNUP_PLACES - filled === 1 ? '' : 's'} still open`;
+    const chips = names.length
+      ? `<div class="name-chips">${names.map(n => `<span class="name-chip">${escapeHtml(n)}</span>`).join('')}</div>`
+      : `<p class="empty-note">No one has confirmed yet.</p>`;
+    const waitlist = waitlistNames.length
+      ? `<p class="signup-status">In sign-up order. Unclaimed places go to the waiting list after 1 January 2027.</p>
+         <ol class="waitlist">${waitlistNames.map(n => `<li>${escapeHtml(n)}</li>`).join('')}</ol>`
+      : `<p class="empty-note">No one on the waiting list yet.</p>`;
+    document.getElementById('signups-body').innerHTML = `
+      <div class="progress-label"><span>Places filled</span><span>${filled} of ${SIGNUP_PLACES}</span></div>
+      <div class="slot-grid" aria-label="${filled} of ${SIGNUP_PLACES} places filled">${slots}</div>
+      <p class="signup-status">${status}</p>
+      <h3 class="signup-heading">Confirmed (${names.length})</h3>
+      ${chips}
+      <h3 class="signup-heading">Waiting list (${waitlistNames.length})</h3>
+      ${waitlist}`;
+  }
+
+  let signupsLoaded = false;
+  async function loadSignups(){
+    if(signupsLoaded) return;
+    signupsLoaded = true;
+    const body = document.getElementById('signups-body');
+    if(!SIGNUPS_CSV_URL){
+      body.innerHTML = '<p class="empty-note">The sign-up list isn\'t connected yet. Check back soon.</p>';
+      return;
+    }
+    try {
+      const res = await fetch(SIGNUPS_CSV_URL, { cache: 'no-store' });
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      const rows = parseCSV(await res.text()).slice(1); // drop header row
+      const column = i => rows.map(r => (r[i] || '').trim()).filter(Boolean).map(shortName);
+      renderSignups(column(0), column(1));
+    } catch {
+      signupsLoaded = false; // let a later tab click retry
+      body.innerHTML = '<p class="empty-note">Couldn\'t load the sign-up list right now. Try again shortly.</p>';
+    }
+  }
+
+  const tabTeams = document.getElementById('tab-teams');
+  const tabSignups = document.getElementById('tab-signups');
+  function showTab(which){
+    const signups = which === 'signups';
+    tabTeams.classList.toggle('active', !signups);
+    tabSignups.classList.toggle('active', signups);
+    document.getElementById('teams-panel').style.display = signups ? 'none' : '';
+    document.getElementById('signups-panel').style.display = signups ? '' : 'none';
+    history.replaceState(null, '', signups ? '#signups' : location.pathname + location.search);
+    if(signups) loadSignups();
+  }
+  tabTeams.addEventListener('click', () => showTab('teams'));
+  tabSignups.addEventListener('click', () => showTab('signups'));
+
   function renderTeams(){
     const grid = document.getElementById('team-grid');
     let html = '';
@@ -38,6 +152,7 @@
     grid.innerHTML = html;
   }
   renderTeams();
+  if(location.hash === '#signups') showTab('signups');
 </script>
 <script src="nav.js"></script>
 </body>

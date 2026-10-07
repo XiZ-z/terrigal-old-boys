@@ -645,3 +645,28 @@ footer{
 .signup-copy p{margin:0; font-size:14.5px; line-height:1.5; color:#D9E3DF; max-width:62ch;}
 .signup-copy strong{color:var(--white);}
 .signup-btn{display:inline-block; text-decoration:none; white-space:nowrap;}
+
+/* ---------- 2027 sign-ups tab (teams.html) ---------- */
+/* 32 slots in rows of 8 -- mirrors 8 teams of 4. */
+.slot-grid{
+  display:grid; grid-template-columns:repeat(8, 1fr); gap:6px;
+  max-width:360px; margin:8px 0 10px;
+}
+.slot{
+  aspect-ratio:1; border-radius:50%;
+  background:var(--white); border:2px solid var(--paper-line);
+}
+.slot--filled{background:var(--ball); border-color:var(--ball-dark);}
+.signup-status{font-size:13.5px; color:var(--ink-soft); margin:0 0 18px;}
+.signup-heading{
+  font-family:'Bebas Neue'; font-size:20px; letter-spacing:0.02em;
+  color:var(--court); margin:4px 0 8px;
+}
+.name-chips{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px;}
+.name-chip{
+  padding:4px 10px; border-radius:999px; background:var(--white);
+  border:1px solid var(--paper-line); font-size:13px; color:var(--ink);
+}
+.waitlist{margin:0 0 18px; padding-left:22px; font-size:14px; color:var(--ink);}
+.waitlist li{padding:2px 0;}
+.signup-banner-link{display:inline-block; margin-top:8px; font-size:13px; font-weight:600; color:inherit;}
