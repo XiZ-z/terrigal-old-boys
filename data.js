@@ -219,12 +219,15 @@ function headToHeadCompare(teamNum, opponentNum){
 // (across the whole competition), then overall game differential,
 // then head-to-head points -> sets -> games (only relevant once a pair is
 // level on all three overall stats).
-function computeLadder(){
+// excludeRound (optional): leave that round's results out, e.g. to rebuild
+// the ladder as it stood before the most recent round for movement arrows.
+function computeLadder(excludeRound){
   const teams = {};
   for(let t=1;t<=8;t++){ teams[t] = { played:0, setsFor:0, setsAgainst:0, gamesFor:0, gamesAgainst:0, points:0, form:[] }; }
 
   ALL_ROUNDS.forEach((pairs, idx) => {
     const roundNum = idx+1;
+    if(roundNum === excludeRound) return;
     pairs.forEach((m, courtIdx) => {
       const key = `${roundNum}-${courtIdx}`;
       const r = RESULTS[key];
@@ -250,6 +253,78 @@ function computeLadder(){
       || (y.setsFor-y.setsAgainst)-(x.setsFor-x.setsAgainst)
       || (y.gamesFor-y.gamesAgainst)-(x.gamesFor-x.gamesAgainst)
       || headToHeadCompare(Number(y.team), Number(x.team)));
+}
+
+// The round most recently played, by date -- usually the highest-numbered
+// round with any results in, but a wet round's replay (played on its
+// reserve date) can land after later-numbered rounds.
+function getLastPlayedRound(){
+  let last = null, lastTime = -Infinity;
+  for(let roundNum = 1; roundNum <= ALL_ROUNDS.length; roundNum++){
+    const hasAny = ALL_ROUNDS[roundNum - 1].some((m, courtIdx) => RESULTS[`${roundNum}-${courtIdx}`]);
+    if(!hasAny) continue;
+    const t = new Date(WET_ROUNDS[roundNum] || DATES[roundNum - 1]).getTime();
+    if(t >= lastTime){ lastTime = t; last = roundNum; }
+  }
+  return last;
+}
+
+// Places each team has moved since before the most recently played round,
+// keyed by team number: positive = up, negative = down, 0 = no change.
+// Empty when there's no earlier round to compare against. The head-to-head
+// tiebreak inside computeLadder() always reads every result, so on the rare
+// full three-way tie it can disagree slightly with how that week stood.
+function getLadderMovement(){
+  const last = getLastPlayedRound();
+  if(last == null) return {};
+  const before = computeLadder(last);
+  if(before.every(r => r.played === 0)) return {};
+  const prevRank = {};
+  before.forEach((r, i) => { prevRank[r.team] = i; });
+  const moves = {};
+  computeLadder().forEach((r, i) => { moves[r.team] = prevRank[r.team] - i; });
+  return moves;
+}
+
+// Who's mathematically locked into ('in') or out of ('out') the top
+// FINALS_SPOTS with every remaining match still to play; null = still open.
+// Each match hands out exactly 10 points between the two teams (6 sets +
+// 2 sets bonus + 2 games bonus), so a team gains 0-10 per remaining match.
+// Both checks are deliberately conservative -- they take every other team's
+// best/worst case independently (ignoring that teams play each other) and
+// count a points tie against the team being checked -- so they can be late
+// to call a spot, but never wrong.
+const FINALS_SPOTS = 6;
+const MAX_POINTS_PER_MATCH = 10;
+function getFinalsQualification(){
+  const rows = computeLadder();
+  const remaining = {};
+  rows.forEach(r => { remaining[r.team] = 0; });
+  let anyRemaining = false;
+  ALL_ROUNDS.forEach((pairs, idx) => {
+    const roundNum = idx+1;
+    if(WET_ROUNDS[roundNum] === null) return; // wet with no replay date -- never gets played
+    pairs.forEach((m, courtIdx) => {
+      if(RESULTS[`${roundNum}-${courtIdx}`]) return;
+      remaining[m[0]]++; remaining[m[1]]++;
+      anyRemaining = true;
+    });
+  });
+
+  const status = {};
+  // Round robin finished: the ladder's own order (with its tiebreaks) is final.
+  if(!anyRemaining){
+    rows.forEach((r, i) => { status[r.team] = i < FINALS_SPOTS ? 'in' : 'out'; });
+    return status;
+  }
+  const maxOf = r => r.points + remaining[r.team] * MAX_POINTS_PER_MATCH;
+  rows.forEach(t => {
+    const others = rows.filter(r => r.team !== t.team);
+    const couldCatch = others.filter(r => maxOf(r) >= t.points).length;
+    const alreadyAbove = others.filter(r => r.points > maxOf(t)).length;
+    status[t.team] = couldCatch < FINALS_SPOTS ? 'in' : alreadyAbove >= FINALS_SPOTS ? 'out' : null;
+  });
+  return status;
 }
 
 // ---------- Season records (biggest wins, closest match, longest streaks) ----------
@@ -416,5 +491,6 @@ if (typeof module !== 'undefined') {
     headToHeadStats, headToHeadCompare, computeLadder,
     getAllPlayedMatches, computeSeasonRecords,
     roundIsPlayed, getNextRound, getRoundsPlayed, computeFinalsState,
+    getLastPlayedRound, getLadderMovement, getFinalsQualification,
   };
 }

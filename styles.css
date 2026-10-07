@@ -301,6 +301,23 @@ tr.note-row td{
 
 body[data-page="ladder"] tbody td{vertical-align:top;}
 
+.rank-move{
+  display:block; font-family:'IBM Plex Mono'; font-size:9px; font-weight:600;
+  line-height:1.2; margin-top:1px; white-space:nowrap;
+}
+.rank-move--up{color:var(--court-mid);}
+.rank-move--down{color:var(--clay);}
+.rank-move--same{color:var(--ink-soft); opacity:0.5;}
+
+.q-pill{
+  display:inline-block; margin-top:3px; padding:1px 6px; border-radius:999px;
+  font-family:'IBM Plex Sans'; font-size:9px; font-weight:700;
+  letter-spacing:0.06em; text-transform:uppercase; white-space:nowrap;
+}
+.q-pill--in{background:var(--ball); color:var(--court-dark);}
+.q-pill--out{background:var(--paper-line); color:var(--ink-soft);}
+.match-team + .q-pill{display:table;}
+
 @media (max-width:640px){
   body[data-page="ladder"] thead th,
   body[data-page="ladder"] tbody td{
