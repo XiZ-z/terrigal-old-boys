@@ -24,6 +24,13 @@
 
   <div class="champion-banner" id="champion-banner"></div>
 
+  <div class="finals-status" id="finals-note"></div>
+
+  <details class="race" id="race" open>
+    <summary><span class="race-title">Race to the six</span><span class="race-sub" id="race-sub"></span></summary>
+    <div id="race-body"></div>
+  </details>
+
   <div class="bracket-scroll">
     <div class="bracket" id="bracket">
       <svg class="bracket-lines" id="bracket-lines"></svg>
@@ -32,7 +39,6 @@
         <div class="bracket-head">
           <h4>Elimination</h4>
           <span class="bracket-date" id="date-elimination"></span>
-          <p class="bracket-note" id="finals-note"></p>
         </div>
         <div class="bracket-slots">
           <div class="bracket-slot" data-slot="game1">
@@ -89,11 +95,26 @@
     return `${n}th`;
   }
 
-  // "Team N" with captain stacked underneath, matching Fixtures/Ladder/Home.
-  // Links to that team's fixtures/results, same as Home's recent-form list.
-  function teamChip(t){
-    const inner = `<span class="t-name">Team ${t}</span><span class="t-captain">${teamCaptain(t)}</span>`;
-    return `<a href="fixtures.html?team=${t}" class="match-team">${inner}</a>`;
+  // Round-robin ladder as it stands: each team's seed (ladder position) and
+  // points, used for the seed badges and the "race to the six" card.
+  let LADDER = [];
+  const seedOf = {};
+  const pointsOf = {};
+  function loadLadder(){
+    LADDER = computeLadder();
+    LADDER.forEach((r, i) => { seedOf[Number(r.team)] = i + 1; pointsOf[Number(r.team)] = r.points; });
+  }
+  const fmtPts = n => (Math.round(n * 2) / 2).toString();
+
+  // One team as a scoreboard row: seed badge, "Team N" with captain beneath,
+  // and a right-hand value (ladder points before the match, sets once it's
+  // played). Links to that team's fixtures/results.
+  function teamRow(t, mod, right){
+    return `<a href="fixtures.html?team=${t}" class="brow${mod ? ' ' + mod : ''}">
+      <span class="seed">${seedOf[t] || ''}</span>
+      <span class="brow-team"><span class="t-name">Team ${t}</span><span class="t-captain">${teamCaptain(t)}</span></span>
+      <span class="brow-right">${right}</span>
+    </a>`;
   }
 
   const SLOT_META = {
@@ -115,31 +136,29 @@
     const el = document.getElementById(slot);
 
     if(!s){
-      el.innerHTML = meta.rank ? `${ordinal(meta.rank[0])} v ${ordinal(meta.rank[1])}` : meta.placeholder;
+      el.innerHTML = `<div class="bph">${meta.rank ? `${ordinal(meta.rank[0])} v ${ordinal(meta.rank[1])}` : meta.placeholder}</div>`;
       return;
     }
 
+    // Teams known, not played yet: two rows showing each side's ladder points.
     if(!s.result){
-      const rankSuffix = meta.rank
-        ? ` <span class="bracket-rank">(${ordinal(meta.rank[0])} v ${ordinal(meta.rank[1])})</span>`
-        : '';
-      el.innerHTML = `${teamChip(s.teamA)}<span class="vs">v</span>${teamChip(s.teamB)}${rankSuffix}`;
+      el.innerHTML = `${teamRow(s.teamA, '', `${fmtPts(pointsOf[s.teamA])} pts`)}
+        <div class="bvs">v</div>
+        ${teamRow(s.teamB, '', `${fmtPts(pointsOf[s.teamB])} pts`)}`;
       return;
     }
 
+    // Played: winner on top, highlighted with a tick and their sets; loser
+    // muted beneath; games on a footer line. Reordered winner-first
+    // regardless of which side was A/B.
     const r = s.result;
     const winnerIsA = s.winner === s.teamA;
     const loser = winnerIsA ? s.teamB : s.teamA;
     const winSets = winnerIsA ? r.setsA : r.setsB, loseSets = winnerIsA ? r.setsB : r.setsA;
     const winGames = winnerIsA ? r.gamesA : r.gamesB, loseGames = winnerIsA ? r.gamesB : r.gamesA;
-    el.innerHTML = `
-      <div class="bmatch-result">
-        <span class="bmatch-winner">${teamChip(s.winner)}</span>
-        <span class="bmatch-vs">def</span>
-        <span class="bmatch-loser">${teamChip(loser)}</span>
-      </div>
-      <div class="bmatch-score">${winSets}&ndash;${loseSets} sets &middot; ${winGames}&ndash;${loseGames} games</div>
-    `;
+    el.innerHTML = `${teamRow(s.winner, 'brow--win', `&#10003; ${winSets}`)}
+      ${teamRow(loser, 'brow--lose', `${loseSets}`)}
+      <div class="bmatch-score">${winSets}&ndash;${loseSets} sets &middot; ${winGames}&ndash;${loseGames} games</div>`;
   }
 
   const TROPHY_SVG = `<svg class="champion-trophy" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
@@ -177,26 +196,91 @@
     return `${weekday} ${dayMonth}`;
   }
 
+  // "in 5 days" / "tomorrow" / "today" for an upcoming night; nothing once
+  // it has passed.
+  function whenLabel(dateStr){
+    const d = new Date(dateStr);
+    const t = new Date();
+    t.setHours(0, 0, 0, 0);
+    d.setHours(0, 0, 0, 0);
+    const days = Math.round((d - t) / 86400000);
+    if(days < 0) return '';
+    if(days === 0) return 'today';
+    if(days === 1) return 'tomorrow';
+    return `in ${days} days`;
+  }
+
   function renderFinalsDates(){
     const dates = getFinalsDates();
     ['elimination', 'semis', 'grandFinal'].forEach(stage => {
       const info = dates[stage];
       const wetPill = info.weeksDelayed > 0 ? ` <span class="pill wet">WET &middot; pushed back</span>` : '';
-      document.getElementById(`date-${stage}`).innerHTML = shortDate(info.date) + wetPill;
+      const when = whenLabel(info.date);
+      document.getElementById(`date-${stage}`).innerHTML =
+        `<span class="date-pill">${shortDate(info.date)}</span>${when ? ` <span class="bracket-when">${when}</span>` : ''}${wetPill}`;
     });
+  }
+
+  // "Race to the six": the round-robin ladder with the finals cut-off drawn
+  // between 6th and 7th and each team's status (locked in / out / still in
+  // the hunt, from getFinalsQualification in data.js). Only while the round
+  // robin is still going -- once it's done the bracket says it all.
+  function renderRace(roundsPlayed, next){
+    const race = document.getElementById('race');
+    if(roundsPlayed === 0 || !next){
+      race.style.display = 'none';
+      return;
+    }
+    race.style.display = '';
+    const status = getFinalsQualification();
+    const togo = ALL_ROUNDS.length - roundsPlayed;
+    document.getElementById('race-sub').textContent = `${togo} round${togo === 1 ? '' : 's'} to go`;
+    // Undecided teams: sitting in the top six right now but not locked ->
+    // "Not locked in"; sitting 7th or 8th with the maths still open ->
+    // "Chasing".
+    const chip = t => status[t] === 'in'
+      ? '<span class="chip chip--in">In</span>'
+      : (status[t] === 'out' ? '<span class="chip chip--out">Out</span>'
+        : (seedOf[t] <= FINALS_SPOTS ? '<span class="chip chip--hunt">Not locked in</span>' : '<span class="chip chip--hunt">Chasing</span>'));
+    const sixth = LADDER[5], seventh = LADDER[6];
+    let html = '<div class="race-list">';
+    LADDER.forEach((r, i) => {
+      const t = Number(r.team);
+      html += `<a href="fixtures.html?team=${t}" class="race-row${i >= 6 ? ' race-row--out' : ''}">
+        <span class="seed">${i + 1}</span>
+        <span class="brow-team"><span class="t-name">Team ${t}</span><span class="t-captain">${teamCaptain(t)}</span></span>
+        <span class="race-pts">${fmtPts(r.points)}<small>pts</small></span>
+        ${chip(t)}
+      </a>`;
+      if(i === 5) html += '<div class="race-cut"><span>Finals cut-off</span></div>';
+    });
+    html += '</div>';
+    if(sixth && seventh){
+      const gap = sixth.points - seventh.points;
+      html += `<p class="race-note">${gap > 0 ? `Sixth place is <strong>${fmtPts(gap)} pt${gap === 1 ? '' : 's'}</strong> clear of seventh.` : 'Sixth and seventh are level on points.'} Ladder ties are split on set difference, then game difference.</p>`;
+    }
+    document.getElementById('race-body').innerHTML = html;
   }
 
   function renderFinals(){
     const next = getNextRound();
     const roundsPlayed = getRoundsPlayed();
+    loadLadder();
 
-    document.getElementById('finals-note').textContent = roundsPlayed === 0
-      ? 'Standings will appear here once Round 1 results are entered.'
-      : (next ? `Provisional — based on standings through Round ${roundsPlayed}.` : 'Final standings — round robin complete.');
+    const note = document.getElementById('finals-note');
+    if(roundsPlayed === 0){
+      note.innerHTML = 'Standings will appear here once Round 1 results are entered.';
+    } else if(next){
+      note.innerHTML = `<span class="status-tag">Provisional</span> Based on standings through Round ${roundsPlayed}. The draw can change until the round robin finishes.`;
+    } else {
+      note.innerHTML = '<span class="status-tag status-tag--final">Final</span> Round robin complete. The draw is set.';
+    }
 
     renderFinalsDates();
+    renderRace(roundsPlayed, next);
     const state = roundsPlayed > 0 ? computeFinalsState() : null;
     Object.keys(SLOT_META).forEach(slot => renderSlot(slot, state));
+    document.querySelector('.bmatch--final .lbl').innerHTML = `${TROPHY_SVG.replace('class="champion-trophy"', 'class="lbl-trophy"')}Grand Final`;
     renderChampionBanner(state);
   }
 

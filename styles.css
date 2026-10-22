@@ -410,16 +410,87 @@ body[data-page="ladder"] tbody td{vertical-align:top;}
 .bmatch .lbl{font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--clay); font-weight:700; margin-bottom:6px;}
 .bmatch--final{border-color:var(--ball-dark); background:linear-gradient(180deg,#FFFDF4,var(--white));}
 .bmatch--final .lbl{color:var(--court);}
-.bmatch-result{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
-.bmatch-winner{
-  display:inline-block; font-family:'Bebas Neue'; font-size:17px; letter-spacing:0.01em;
-  background:var(--ball); color:var(--court-dark);
-  padding:3px 12px; border-radius:7px; text-align:center;
+.bmatch-score{font-family:'IBM Plex Mono'; font-size:12px; color:var(--ink-soft); margin-top:8px; text-align:center;}
+
+/* Scoreboard rows inside a bracket game: seed badge, team + captain, value. */
+.brow{
+  display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px;
+  background:var(--paper); text-decoration:none; color:inherit;
 }
-.bmatch-winner .t-captain{color:var(--court-dark);}
-.bmatch-loser{display:inline-block; font-family:'Bebas Neue'; font-size:17px; letter-spacing:0.01em; color:var(--ink-soft); text-align:center;}
-.bmatch-vs{font-size:10.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft); font-weight:500;}
-.bmatch-score{font-family:'IBM Plex Mono'; font-size:12.5px; color:var(--ink-soft); margin-top:7px;}
+.brow:hover .t-name{text-decoration:underline;}
+.brow-team{flex:1; min-width:0; line-height:1.25;}
+.brow-team .t-name{display:block; font-family:'Bebas Neue'; font-size:19px; letter-spacing:0.01em; color:var(--court-dark);}
+.brow-team .t-captain{display:block; font-size:11px; color:var(--ink-soft);}
+.brow-right{font-family:'IBM Plex Mono'; font-size:13px; font-weight:600; color:var(--ink-soft); white-space:nowrap;}
+.brow--win{background:var(--ball);}
+.brow--win .t-captain, .brow--win .brow-right{color:var(--court-dark);}
+.brow--lose{background:transparent; border:1px solid var(--paper-line);}
+.brow--lose .t-name{color:var(--ink-soft);}
+.bvs{text-align:center; font-size:10.5px; text-transform:uppercase; letter-spacing:0.12em; color:var(--ink-soft); padding:3px 0;}
+.bph{font-size:14px; color:var(--ink-soft); padding:6px 2px;}
+.seed{
+  flex:0 0 auto; width:24px; height:24px; border-radius:50%;
+  background:var(--court); color:var(--white);
+  font-family:'Bebas Neue'; font-size:15px; line-height:24px; text-align:center;
+}
+.date-pill{
+  display:inline-block; background:var(--court); color:var(--white);
+  font-size:11px; font-weight:600; padding:2px 9px; border-radius:999px;
+}
+.bracket-when{font-size:11.5px; color:var(--clay); font-weight:600; margin-left:4px;}
+.lbl-trophy{width:18px; height:18px; vertical-align:-4px; margin-right:6px;}
+
+/* Provisional / final status banner above the bracket. */
+.finals-status{
+  background:#FFF6D9; border:1px solid #F0DFA0; border-radius:12px;
+  padding:10px 14px; font-size:13px; color:var(--ink); margin:0 0 16px; line-height:1.5;
+}
+.finals-status:empty{display:none;}
+.status-tag{
+  display:inline-block; background:var(--clay); color:var(--white);
+  font-size:10.5px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;
+  padding:2px 8px; border-radius:999px; margin-right:6px;
+}
+.status-tag--final{background:var(--court);}
+
+/* Race to the six. */
+.race{
+  background:var(--white); border:1px solid var(--paper-line); border-radius:var(--radius);
+  padding:0 16px; margin:0 0 22px;
+}
+.race > summary{
+  list-style:none; cursor:pointer; display:flex; align-items:baseline; justify-content:space-between;
+  padding:14px 0;
+}
+.race > summary::-webkit-details-marker{display:none;}
+.race-title{font-family:'Bebas Neue'; font-size:21px; color:var(--court-dark); letter-spacing:0.02em;}
+.race-sub{font-size:12px; color:var(--ink-soft);}
+.race-sub::after{content:'  \25BE'; color:var(--ink-soft);}
+.race[open] .race-sub::after{content:'  \25B4';}
+.race-list{display:flex; flex-direction:column; gap:2px;}
+.race-row{
+  display:flex; align-items:center; gap:10px; padding:7px 0;
+  text-decoration:none; color:inherit; border-top:1px solid var(--paper-line);
+}
+.race-row:first-child{border-top:0;}
+.race-row--out .seed{background:var(--ink-soft);}
+.race-row--out .t-name{color:var(--ink-soft);}
+.race-pts{font-family:'IBM Plex Mono'; font-size:14px; font-weight:600; color:var(--court-dark); min-width:56px; text-align:right;}
+.race-pts small{font-family:'IBM Plex Sans'; font-size:10px; font-weight:500; color:var(--ink-soft); margin-left:2px;}
+.chip{
+  font-size:10.5px; font-weight:700; letter-spacing:0.04em; padding:3px 9px; border-radius:999px;
+  white-space:nowrap; min-width:92px; text-align:center;
+}
+.chip--in{background:var(--ball); color:var(--court-dark);}
+.chip--out{background:#F0C8B4; color:#7A2E12;}
+.chip--hunt{background:#FFF1BF; color:#6B5300; border:1px solid #F0DFA0;}
+.race-cut{
+  display:flex; align-items:center; gap:8px; margin:2px 0; color:var(--clay);
+  font-size:10.5px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase;
+}
+.race-cut::before, .race-cut::after{content:''; flex:1; border-top:2px dashed var(--clay); opacity:.55;}
+.race-note{font-size:12px; color:var(--ink-soft); margin:10px 0 14px; line-height:1.5;}
+@media (min-width:701px){ .race{max-width:520px;} }
 .bracket-wildcard{font-size:11.5px; color:var(--ink-soft); margin:10px 2px 0; font-style:italic;}
 .champion-banner{
   display:none; align-items:center; gap:20px;
@@ -455,6 +526,11 @@ body[data-page="ladder"] tbody td{vertical-align:top;}
     width:10px; height:10px; border-radius:50%;
     background:var(--ball); border:2px solid var(--ball-dark);
   }
+  .bmatch{padding:12px 12px 14px;}
+  .bracket-head{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .bracket-head h4{font-size:22px;}
+  .bracket-date{margin-top:0;}
+  .finals-status{font-size:12.5px;}
 }
 
 /* ---------- Rules ---------- */
