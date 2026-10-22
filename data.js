@@ -14,6 +14,78 @@ const TEAMS = {
   8: [{name:"Scott"}, {name:"Matt"}, {name:"Warren", captain:true}, {name:"Gordon"}],
 };
 
+// 2026 reserves: the people who fill in when a team is short, grouped by the
+// grade they're listed under on the Reserves tab of the club's roster sheet,
+// so captains can pick a like-for-like replacement. First name + surname
+// initial (unlike TEAMS' first names only) because several share a first
+// name -- Rob/Robert, and Dave also plays on Team 6. Names only, no contact
+// details. Alphabetical within each grade.
+const RESERVES = {
+  1: ["Andrew W.", "Clint H.", "John M.", "Pete R.", "Rick M.", "Rob H."],
+  2: ["Craig M.", "Dustyn J.", "Marc L.", "Martin M."],
+  3: ["Dave N.", "Nick P.", "Robert B."],
+};
+
+// ---------- Lineups ----------
+// Who actually took the court in each match, same "round-slot" keys as RESULTS
+// and in the same A/B order as the fixture (first array = team A, second =
+// team B), taken from the names written on each weekly score sheet. Used by
+// the player cards (player.html). Names are as shown on the Teams page; a
+// player borrowed from another team is "Name@<their team>" (e.g. "Max@4"),
+// a reserve is "Clint H." as in RESERVES, and "?" is a name left blank on the
+// sheet. Rounds 1-12 were backfilled from the sheets; from here on the
+// upload/approval flow is meant to add each new round's entry.
+const LINEUPS = {
+  "1-0": [["Adam", "Jordan", "Michael"], ["Scott", "Matt", "Gordon"]],
+  "1-1": [["Tony", "Bradley", "Harrison"], ["Anthony", "Warren@8", "Nick P."]],
+  "1-2": [["Ian", "Daniel", "Paul"], ["Dave", "Will", "Steve"]],
+  "1-3": [["Max", "Kade", "Glenn"], ["Daren", "Sam", "Andrew"]],
+  "2-0": [["Clint H.", "Jordan", "Nick P."], ["Anthony", "Andrew", "Charlie"]],
+  "2-1": [["Scott", "Matt", "Warren"], ["Dave", "Will", "Steve"]],
+  "2-2": [["Ash", "Bradley", "Harrison"], ["Daren", "Sam", "Andrew"]],
+  "2-3": [["Andrew", "Ian", "Daniel"], ["Blake", "Max", "Kade"]],
+  "3-0": [["Adam", "Jordan", "Cameron"], ["Dave", "Anthony@7", "Steve"]],
+  "3-1": [["Dean", "Andrew", "Charlie"], ["Daren", "Andrew", "Ben"]],
+  "3-2": [["Clint H.", "Matt", "Warren"], ["Blake", "Max", "Glenn"]],
+  "3-3": [["Ash", "Tony", "Bradley"], ["Andrew", "Ian", "Daniel"]],
+  "4-0": [["Adam", "Jordan", "Cameron"], ["Sam", "Andrew", "Ben"]],
+  "4-1": [["Will", "Steve", "Nick P."], ["Blake", "Kade", "Glenn"]],
+  "4-2": [["Dean", "Anthony", "Charlie"], ["Andrew", "Ian", "Daniel"]],
+  "4-3": [["Scott", "Craig M.", "Warren"], ["Tony", "Bradley", "Harrison"]],
+  "5-0": [["Adam", "Jordan", "Cameron"], ["Max", "Kade", "Glenn"]],
+  "5-1": [["Clint H.", "Andrew", "Ben"], ["Andrew", "Ian", "Daniel"]],
+  "5-2": [["Will", "Steve", "Nick P."], ["Ash", "Tony", "Harrison"]],
+  "5-3": [["Dean", "Anthony", "Andrew"], ["Matt", "Warren", "Gordon"]],
+  "6-0": [["Adam", "Jordan", "Cameron"], ["Andrew", "Ian", "Daniel"]],
+  "6-1": [["Blake", "Max", "Kade"], ["Ash", "Tony", "Bradley"]],
+  "6-2": [["Daren", "Andrew", "Ben"], ["Scott", "Matt", "Gordon"]],
+  "6-3": [["Will", "Steve", "Dave"], ["Dean", "Anthony", "Andrew"]],
+  "7-0": [["Jordan", "Paul@3", "Cameron"], ["Tony", "Bradley", "Harrison"]],
+  "7-1": [["Andrew", "Ian", "Daniel"], ["Scott", "Matt", "Gordon"]],
+  "7-2": [["Blake", "Max", "Glenn"], ["Dean", "Andrew", "Charlie"]],
+  "7-3": [["Daren", "Martin M.", "Ben"], ["Will", "Steve", "Nick P."]],
+  "8-0": [["Adam", "Gordon@8", "Michael"], ["Scott", "Matt", "Warren"]],
+  "8-1": [["Max@4", "Tony", "Harrison"], ["Dean", "Anthony", "Charlie"]],
+  "8-2": [["Andrew", "Daniel", "Paul"], ["Will", "Steve", "Nick P."]],
+  "8-3": [["Blake", "Kade", "Glenn"], ["Daren", "Sam", "Andrew"]],
+  "9-0": [["Daniel@3", "Cameron", "Michael"], ["Anthony", "Andrew", "Charlie"]],
+  "9-1": [["Scott", "Warren", "Gordon"], ["Daren@5", "Will", "Steve"]],
+  "9-2": [["Ash", "Bradley", "Harrison"], ["Sam", "Andrew", "Ben"]],
+  "9-3": [["Andrew", "Ian", "Paul"], ["Blake", "Max", "Kade"]],
+  "10-0": [["Jordan", "Cameron", "Nick P."], ["Will", "Steve", "?"]],
+  "10-1": [["Dean", "Anthony", "Andrew"], ["Daren", "Craig M.", "Andrew"]],
+  "10-2": [["Scott", "Matt", "Gordon"], ["Blake", "Max", "Glenn"]],
+  "10-3": [["Tony", "Bradley", "Harrison"], ["Andrew W.", "Ian", "Daniel"]],
+  "11-0": [["Andrew W.", "Max@4", "Rob H."], ["Daren", "Sam", "Ben"]],
+  "11-1": [["Dave", "Will", "?"], ["Blake", "Kade", "Glenn"]],
+  "11-2": [["Dean", "?", "Andrew"], ["Andrew", "Daniel", "Paul"]],
+  "11-3": [["Matt", "Warren", "Gordon"], ["Ash", "Harrison", "Tony"]],
+  "12-0": [["Adam", "Jordan", "Gordon@8"], ["Blake", "Max", "Kade"]],
+  "12-1": [["Daren", "Sam", "Ben"], ["Ian", "Daniel", "Paul"]],
+  "12-2": [["Dave", "Will", "Steve"], ["Tony", "Harrison", "Bradley"]],
+  "12-3": [["Dean", "Anthony", "Charlie"], ["Scott", "Matt", "Warren"]],
+};
+
 function teamCaptain(t){
   const c = TEAMS[t].find(p => p.captain);
   return c ? c.name : null;

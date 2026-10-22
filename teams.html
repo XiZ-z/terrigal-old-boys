@@ -29,6 +29,9 @@
   <div id="teams-panel">
     <p class="section-sub">Eight teams, always known simply as Team 1 through Team 8.</p>
     <div class="team-grid" id="team-grid"></div>
+    <h3 class="signup-heading" style="margin-top:28px;">Reserves</h3>
+    <p class="section-sub">Available to fill in when a team is short. Captains can ask the organiser for a reserve.</p>
+    <div id="reserve-groups"></div>
   </div>
 
   <div id="signups-panel" style="display:none;">
@@ -146,12 +149,17 @@
     const grid = document.getElementById('team-grid');
     let html = '';
     for(let t=1;t<=8;t++){
-      const players = TEAMS[t].map(p => `<div class="player">${p.name}${p.captain ? ' <span class="captain-badge">C</span>' : ''}</div>`).join('');
-      html += `<a class="team-card" id="team-${t}" href="fixtures.html?team=${t}"><div class="name">Team ${t}</div><div class="players">${players}</div></a>`;
+      // The card is no longer one big link: the team name still goes to that
+      // team's fixtures, and each player's name opens their own card.
+      const players = TEAMS[t].map(p => `<div class="player"><a href="player.html?team=${t}&amp;name=${encodeURIComponent(p.name)}">${p.name}</a>${p.captain ? ' <span class="captain-badge">C</span>' : ''}</div>`).join('');
+      html += `<div class="team-card" id="team-${t}"><a class="name" href="fixtures.html?team=${t}">Team ${t}</a><div class="players">${players}</div></div>`;
     }
     grid.innerHTML = html;
   }
   renderTeams();
+  document.getElementById('reserve-groups').innerHTML = Object.keys(RESERVES).map(g =>
+    `<div class="reserve-grade">Grade ${g}</div>
+     <div class="name-chips">${RESERVES[g].map(n => `<a class="name-chip" href="player.html?reserve=${encodeURIComponent(n)}">${escapeHtml(n)}</a>`).join('')}</div>`).join('');
   if(location.hash === '#signups') showTab('signups');
 </script>
 <script src="nav.js"></script>

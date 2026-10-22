@@ -374,6 +374,12 @@ body[data-page="ladder"] tbody td{vertical-align:top;}
 .team-card .name{font-family:'Bebas Neue'; font-size:22px; color:var(--court-dark); margin-bottom:8px;}
 .team-card .players{font-size:12.5px; color:var(--ink-soft); margin-top:10px;}
 .team-card .player{line-height:1.9;}
+.team-card a{color:inherit; text-decoration:none;}
+.team-card a.name{display:block;}
+.team-card .player a{padding:2px 0;}
+.team-card .player a:hover{color:var(--court); text-decoration:underline; text-underline-offset:3px;}
+a.name-chip{text-decoration:none;}
+a.name-chip:hover{border-color:var(--ball-dark); color:var(--court);}
 .team-card .captain-badge{
   display:inline-block; width:14px; height:14px; line-height:14px;
   border-radius:50%; background:var(--clay); color:var(--white);
@@ -666,6 +672,10 @@ footer{
 .name-chip{
   padding:4px 10px; border-radius:999px; background:var(--white);
   border:1px solid var(--paper-line); font-size:13px; color:var(--ink);
+}
+.reserve-grade{
+  font-size:11.5px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;
+  color:var(--ink-soft); margin:2px 0 6px;
 }
 .waitlist{margin:0 0 18px; padding-left:22px; font-size:14px; color:var(--ink);}
 .waitlist li{padding:2px 0;}
