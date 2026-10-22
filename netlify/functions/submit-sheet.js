@@ -173,7 +173,24 @@ exports.handler = async (event) => {
   const totalMismatch = extracted.sheetTotalA != null && extracted.sheetTotalB != null
     && (extracted.sheetTotalA !== bp.totalA || extracted.sheetTotalB !== bp.totalB);
 
-  const hasIssue = sheetMismatch || courtMismatch || dateMismatch || winnerMismatch || totalMismatch;
+  // Weekly only: the six pairing rows' GAMES should add up to the Total
+  // row's GAMES value. The Total row is still what gets recorded (it's the
+  // figure the whole pipeline is built on) -- this just asks the uploader to
+  // double-check when a sheet's own addition looks wrong, as on Round 8 /
+  // Court 4 (rows added to 19-29 but the Total box said 21-27). Only flagged
+  // when both sums were confidently readable (null = not sure, never counts
+  // as a mismatch), AND the two row sums themselves total 48 -- every set
+  // is 8 games, so a real read of the rows always sums to 48 between the two
+  // sides; if it doesn't, a row was misread and warning about it would be a
+  // false alarm. Same warn-but-allow flow as the other checks, never a hard
+  // block.
+  const rowsMismatch = mode === 'weekly'
+    && typeof extracted.rowGamesA === 'number' && Number.isFinite(extracted.rowGamesA)
+    && typeof extracted.rowGamesB === 'number' && Number.isFinite(extracted.rowGamesB)
+    && extracted.rowGamesA + extracted.rowGamesB === expectedGames
+    && (extracted.rowGamesA !== extracted.gamesA || extracted.rowGamesB !== extracted.gamesB);
+
+  const hasIssue = sheetMismatch || courtMismatch || dateMismatch || winnerMismatch || totalMismatch || rowsMismatch;
 
   if (hasIssue && !payload.confirmedExtracted) {
     return json(200, {
@@ -183,6 +200,7 @@ exports.handler = async (event) => {
       dateMismatch, expectedDate: dateStr,
       winnerMismatch, winnerOnSheet: extracted.winner ?? null, expectedWinner,
       totalMismatch, sheetTotalA: extracted.sheetTotalA ?? null, sheetTotalB: extracted.sheetTotalB ?? null, expectedTotalA: bp.totalA, expectedTotalB: bp.totalB,
+      rowsMismatch, rowGamesA: extracted.rowGamesA ?? null, rowGamesB: extracted.rowGamesB ?? null,
     });
   }
 
@@ -213,6 +231,7 @@ exports.handler = async (event) => {
         dateMismatch, expectedDate: dateStr,
         winnerMismatch, winnerOnSheet: extracted.winner ?? null, expectedWinner,
         totalMismatch, sheetTotalA: extracted.sheetTotalA ?? null, sheetTotalB: extracted.sheetTotalB ?? null, expectedTotalA: bp.totalA, expectedTotalB: bp.totalB,
+        rowsMismatch, rowGamesA: extracted.rowGamesA ?? null, rowGamesB: extracted.rowGamesB ?? null,
       },
     } : {}),
     createdAt: new Date().toISOString(),

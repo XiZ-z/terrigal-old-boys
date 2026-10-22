@@ -485,6 +485,7 @@
       parts.push(`the Winner box says <strong>${onSheet}</strong>, but the points clearly favor <strong>${byPoints}</strong> (no tie, so no tiebreaker needed)`);
     }
     if (data.totalMismatch) parts.push(`the sheet's own TOTAL box reads <strong>${data.sheetTotalA}–${data.sheetTotalB}</strong>, but Points + Bonus works out to <strong>${data.expectedTotalA}–${data.expectedTotalB}</strong>`);
+    if (data.rowsMismatch) parts.push(`the six game rows add up to <strong>${data.rowGamesA}–${data.rowGamesB}</strong>, but the Total box reads <strong>${data.extracted.gamesA}–${data.extracted.gamesB}</strong> (are you sure the Total is correct?)`);
     return parts.join(' and ');
   }
 
@@ -499,6 +500,7 @@
     if (data.actualGames !== data.expectedGames || data.actualSets !== data.expectedSets) titles.push("Numbers Don't Add Up");
     if (data.winnerMismatch) titles.push('Wrong Winner');
     if (data.totalMismatch) titles.push("Total Doesn't Match");
+    if (data.rowsMismatch) titles.push("Games Total Doesn't Match the Rows");
     return titles.join(' & ');
   }
 
