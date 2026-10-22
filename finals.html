@@ -243,6 +243,51 @@
       : (status[t] === 'out' ? '<span class="chip chip--out">Out</span>'
         : (seedOf[t] <= FINALS_SPOTS ? '<span class="chip chip--hunt">Not locked in</span>' : '<span class="chip chip--hunt">Chasing</span>'));
     const sixth = LADDER[5], seventh = LADDER[6];
+
+    // Games each team still has to play: rounds with no result entered yet
+    // (a wet round that is never replayed doesn't count).
+    const remainingFixtures = t => {
+      const out = [];
+      ALL_ROUNDS.forEach((pairs, i) => {
+        const round = i + 1;
+        if(WET_ROUNDS[round] === null) return;
+        pairs.forEach((m, slot) => {
+          if(RESULTS[`${round}-${slot}`] || !m.includes(t)) return;
+          out.push({ round, opp: m[0] === t ? m[1] : m[0] });
+        });
+      });
+      return out;
+    };
+
+    // Plain, always-true facts under each team: how far clear of / behind the
+    // cut-off they are, and what a chaser has to beat. Every match hands out
+    // exactly 10 points, so a team can gain at most 10 per game left.
+    const pts = n => `${fmtPts(n)} pt${n === 1 ? '' : 's'}`;
+    const detail = (r, i) => {
+      const t = Number(r.team);
+      const rem = remainingFixtures(t);
+      const fx = rem.length
+        ? `<div class="fx">Still to play: ${rem.map(m => `R${m.round} v Team ${m.opp}`).join(' &middot; ')}</div>`
+        : '<div class="fx">All games played</div>';
+      let line = '';
+      if(status[t] === 'in'){
+        line = '';
+      } else if(status[t] === 'out'){
+        line = `Can't catch the top six, even with every point available (${fmtPts(r.points + rem.length * MAX_POINTS_PER_MATCH)} at best).`;
+      } else if(i < FINALS_SPOTS){
+        const gap = r.points - seventh.points;
+        line = gap > 0
+          ? `<strong>${pts(gap)}</strong> clear of Team ${seventh.team} (7th), the first team outside the six.`
+          : `Level on points with Team ${seventh.team} (7th); set difference splits them.`;
+      } else {
+        const behind = sixth.points - r.points;
+        line = behind > 0
+          ? `<strong>${pts(behind)}</strong> behind Team ${sixth.team} (6th). Needs to out-score them by more than ${fmtPts(behind)} over their remaining games.`
+          : `Level on points with Team ${sixth.team} (6th). Needs to out-score them to take the spot; set difference splits a tie.`;
+      }
+      return `<div class="race-detail">${line ? `<div>${line}</div>` : ''}${fx}</div>`;
+    };
+
     let html = '<div class="race-list">';
     LADDER.forEach((r, i) => {
       const t = Number(r.team);
@@ -251,7 +296,7 @@
         <span class="brow-team"><span class="t-name">Team ${t}</span><span class="t-captain">${teamCaptain(t)}</span></span>
         <span class="race-pts">${fmtPts(r.points)}<small>pts</small></span>
         ${chip(t)}
-      </a>`;
+      </a>${detail(r, i)}`;
       if(i === 5) html += '<div class="race-cut"><span>Finals cut-off</span></div>';
     });
     html += '</div>';
