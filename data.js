@@ -58,7 +58,7 @@ const DATES = [
   "28 Oct 2026","4 Nov 2026"
 ];
 
-const RESERVE_DATES = ["11 Nov 2026", "18 Nov 2026"];
+const RESERVE_DATES = [];
 
 // Rounds postponed due to wet weather. Value is the reserve date it's
 // been rescheduled to, or null if there's no reserve slot left for it (only
@@ -71,9 +71,9 @@ const WET_ROUNDS = {
 };
 
 const FINALS_DATES = {
-  elimination: "25 Nov 2026",
-  semis: "2 Dec 2026",
-  grandFinal: "9 Dec 2026",
+  elimination: "18 Nov 2026",
+  semis: "25 Nov 2026",
+  grandFinal: "2 Dec 2026",
 };
 
 // Unlike the round robin's fixed reserve weeks, a wet finals night just

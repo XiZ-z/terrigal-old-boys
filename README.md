@@ -31,6 +31,6 @@ There's no live data source — this is intentional. Each Wednesday:
 The Home, Fixtures, and Ladder pages recompute automatically from `RESULTS` —
 nothing else needs updating.
 
-Rounds 15–16 are wet-weather reserve weeks (`RESERVE_DATES` in `data.js`) —
-only used if a round robin week is rained out; leave them out of `RESULTS`
-unless they're actually played.
+There are no wet-weather reserve weeks this season (`RESERVE_DATES` in `data.js`
+is empty) — 11 Nov is a social hit and finals start 18 Nov. A rained-out round is
+recorded as having no replay.

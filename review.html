@@ -338,7 +338,7 @@
   const FINALS_STAGES_LIST = ['elimination', 'semis', 'grandFinal'];
 
   function wetRoundNoteText(roundNum) {
-    return `Approving will mark Round ${roundNum} as postponed and auto-assign the next available replay date (11 Nov / 18 Nov), or record it as having no replay if both are already used.`;
+    return `Approving will mark Round ${roundNum} as postponed and record it as having no replay (no reserve weeks remain).`;
   }
   function updateWetRoundNote(id) {
     document.getElementById(`wet-note-${id}`).textContent = wetRoundNoteText(document.getElementById(`round-${id}`).value);
