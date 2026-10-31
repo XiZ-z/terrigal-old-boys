@@ -750,3 +750,14 @@ footer{
 .waitlist{margin:0 0 18px; padding-left:22px; font-size:14px; color:var(--ink);}
 .waitlist li{padding:2px 0;}
 .signup-banner-link{display:inline-block; margin-top:8px; font-size:13px; font-weight:600; color:inherit;}
+
+/* ---------- Schedule-change notice (home) ---------- */
+.notice-banner{
+  background:#FFF6D9; border:1px solid #F0DFA0; border-left:5px solid var(--clay);
+  border-radius:var(--radius); padding:16px 20px; margin-bottom:16px; color:var(--ink);
+}
+.notice-banner .eyebrow{font-size:11px; text-transform:uppercase; letter-spacing:0.1em; font-weight:700; color:var(--clay);}
+.notice-banner h2{font-family:'Bebas Neue', sans-serif; font-size:28px; letter-spacing:0.02em; margin:2px 0 6px; font-weight:400; color:var(--court);}
+.notice-banner p{margin:0 0 8px; font-size:14.5px; line-height:1.5;}
+.notice-banner ul{margin:0 0 8px; padding-left:20px; font-size:14.5px; line-height:1.6;}
+.notice-banner .notice-foot{margin:0; font-size:13px; color:var(--ink-soft);}
