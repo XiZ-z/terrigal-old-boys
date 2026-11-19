@@ -455,6 +455,7 @@ function getRoundsPlayed(){
 // otherwise captured in those four numbers (finals only).
 const FINALS_RESULTS = {
   // Cleared for the real season -- add real results here once played.
+  game1: { setsA: 4.5, setsB: 3.5, gamesA: 32, gamesB: 32, winner: 'A' },
 };
 
 // Resolves each bracket slot's actual teams (from ladder seeding and prior
