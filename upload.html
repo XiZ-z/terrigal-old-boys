@@ -328,6 +328,9 @@
     wetFields.style.display = mode === 'wet' ? '' : 'none';
     photoField.style.display = mode === 'wet' ? 'none' : '';
     photoInput.required = mode !== 'wet';
+    // The court picker is hidden outside Weekly mode; a hidden required field
+    // that's empty blocks the submit with no visible message.
+    courtSelect.required = mode === 'weekly';
     submitBtn.textContent = mode === 'wet' ? 'Report as WET' : 'Submit for review';
     updateMatchupPreview();
     if (mode === 'wet') updateWetAlreadyReportedNote();
