@@ -457,6 +457,7 @@ const FINALS_RESULTS = {
   // Cleared for the real season -- add real results here once played.
   game1: { setsA: 4.5, setsB: 3.5, gamesA: 32, gamesB: 32, winner: 'A' },
   game2: { setsA: 5, setsB: 3, gamesA: 38, gamesB: 26, winner: 'A' },
+  game3: { setsA: 3, setsB: 5, gamesA: 29, gamesB: 35, winner: 'B' },
 };
 
 // Resolves each bracket slot's actual teams (from ladder seeding and prior
