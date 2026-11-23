@@ -35,7 +35,7 @@
   </div>
 
   <div id="signups-panel" style="display:none;">
-    <p class="section-sub">2027 Season 1 has 32 places. Current players: confirm your spot by <strong>Friday 1 January 2027</strong>. After that, unclaimed spots go to the waiting list.</p>
+    <p class="section-sub">2027 Season 1 has 32 places. Current players: confirm your spot by <strong>Friday 1 January 2027</strong>.</p>
     <div id="signups-body"><p class="empty-note">Loading sign-ups…</p></div>
     <a class="btn btn-primary signup-btn" href="https://docs.google.com/forms/d/e/1FAIpQLSdG2gWx5Bs1DfMw_SvzTPX312fSQcymbWWijgfsncIs842vsg/viewform" target="_blank" rel="noopener">Sign up for 2027</a>
   </div>
@@ -91,22 +91,22 @@
     const slots = Array.from({ length: SIGNUP_PLACES }, (_, i) =>
       `<span class="slot${i < filled ? ' slot--filled' : ''}"></span>`).join('');
     const status = filled >= SIGNUP_PLACES
-      ? `All ${SIGNUP_PLACES} places filled. New sign-ups join the waiting list.`
+      ? `All ${SIGNUP_PLACES} places filled.`
       : `${SIGNUP_PLACES - filled} place${SIGNUP_PLACES - filled === 1 ? '' : 's'} still open`;
     const chips = names.length
       ? `<div class="name-chips">${names.map(n => `<span class="name-chip">${escapeHtml(n)}</span>`).join('')}</div>`
       : `<p class="empty-note">No one has confirmed yet.</p>`;
     const waitlist = waitlistNames.length
-      ? `<p class="signup-status">In sign-up order. Unclaimed places go to the waiting list after 1 January 2027.</p>
-         <ol class="waitlist">${waitlistNames.map(n => `<li>${escapeHtml(n)}</li>`).join('')}</ol>`
-      : `<p class="empty-note">No one on the waiting list yet.</p>`;
+      ? `<ol class="waitlist">${waitlistNames.map(n => `<li>${escapeHtml(n)}</li>`).join('')}</ol>`
+      : `<p class="empty-note">No one has shown interest yet.</p>`;
     document.getElementById('signups-body').innerHTML = `
       <div class="progress-label"><span>Places filled</span><span>${filled} of ${SIGNUP_PLACES}</span></div>
       <div class="slot-grid" aria-label="${filled} of ${SIGNUP_PLACES} places filled">${slots}</div>
       <p class="signup-status">${status}</p>
       <h3 class="signup-heading">Confirmed (${names.length})</h3>
       ${chips}
-      <h3 class="signup-heading">Waiting list (${waitlistNames.length})</h3>
+      <h3 class="signup-heading">Interested players (${waitlistNames.length})</h3>
+      <p class="signup-status">New players interested in joining the new season.</p>
       ${waitlist}`;
   }
 
